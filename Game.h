@@ -89,7 +89,7 @@ private:
 	Light																	m_Light;
 
 	//Cameras
-	Camera																	m_Camera01;
+	Camera																	m_Camera;
 
 	//textures 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_texture1;

@@ -74,8 +74,8 @@ void Game::Initialize(HWND window, int width, int height)
 	m_Light.setDirection(-1.0f, -1.0f, 0.0f);
 
 	//setup camera
-	m_Camera01.setPosition(Vector3(0.0f, 0.0f, 4.0f));
-	m_Camera01.setRotation(Vector3(-90.0f, -180.0f, 0.0f));	//orientation is -90 becuase zero will be looking up at the sky straight up. 
+	m_Camera.setPosition(Vector3(0.0f, 0.0f, 4.0f));
+	m_Camera.setRotation(Vector3(-90.0f, -180.0f, 0.0f));	//orientation is -90 becuase zero will be looking up at the sky straight up. 
 
 	
 #ifdef DXTK_AUDIO
@@ -134,60 +134,57 @@ void Game::Tick()
 
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
-{	
-	//this is hacky,  i dont like this here.  
-	auto device = m_deviceResources->GetD3DDevice();
-
+{
 	//note that currently.  Delta-time is not considered in the game object movement. 
 	if (m_gameInputCommands.left)
 	{
-		Vector3 rotation = m_Camera01.getRotation();
-		rotation.y = rotation.y += m_Camera01.getRotationSpeed();
-		m_Camera01.setRotation(rotation);
+		Vector3 rotation = m_Camera.getRotation();
+		rotation.y = rotation.y += m_Camera.getRotationSpeed();
+		m_Camera.setRotation(rotation);
 	}
 	if (m_gameInputCommands.right)
 	{
-		Vector3 rotation = m_Camera01.getRotation();
-		rotation.y = rotation.y -= m_Camera01.getRotationSpeed();
-		m_Camera01.setRotation(rotation);
+		Vector3 rotation = m_Camera.getRotation();
+		rotation.y = rotation.y -= m_Camera.getRotationSpeed();
+		m_Camera.setRotation(rotation);
 	}
 	if (m_gameInputCommands.forward)
 	{
-		Vector3 position = m_Camera01.getPosition(); //get the position
-		position += (m_Camera01.getForward()*m_Camera01.getMoveSpeed()); //add the forward vector
-		m_Camera01.setPosition(position);
+		Vector3 position = m_Camera.getPosition(); //get the position
+		position += (m_Camera.getForward()*m_Camera.getMoveSpeed()); //add the forward vector
+		m_Camera.setPosition(position);
 	}
 	if (m_gameInputCommands.back)
 	{
-		Vector3 position = m_Camera01.getPosition(); //get the position
-		position -= (m_Camera01.getForward()*m_Camera01.getMoveSpeed()); //add the forward vector
-		m_Camera01.setPosition(position);
+		Vector3 position = m_Camera.getPosition(); //get the position
+		position -= (m_Camera.getForward()*m_Camera.getMoveSpeed()); //add the forward vector
+		m_Camera.setPosition(position);
 	}
 
 	if (m_gameInputCommands.waveGenerate)
 	{
-		m_Terrain.GenerateWaveHeightMap(device);
+		m_Terrain.GenerateWaveHeightMap();
 	}
 
 	if (m_gameInputCommands.randomGenerate)
 	{
-		m_Terrain.GenerateRandomHeightMap(device);
+		m_Terrain.GenerateRandomHeightMap();
 	}
 
 	if (m_gameInputCommands.addRanGenerate)
 	{
-		m_Terrain.GenerateAdditiveRandomHeightMap(device);
+		m_Terrain.GenerateAdditiveOrMultiplyNoiseMap();
 	}
 
 	if (m_gameInputCommands.smoothen)
 	{
-		m_Terrain.SmoothenHeightMap(device);
+		m_Terrain.SmoothenHeightMap();
 	}
 
-	m_Camera01.Update();	//camera update.
+	m_Camera.Update();	//camera update.
 	m_Terrain.Update();		//terrain update.  doesnt do anything at the moment. 
 
-	m_view = m_Camera01.getCameraMatrix();
+	m_view = m_Camera.getCameraMatrix();
 	m_world = Matrix::Identity;
 
 	/*create our UI*/
@@ -422,9 +419,44 @@ void Game::SetupGUI()
 	ImGui::NewFrame();
 
 	ImGui::Begin("Sin Wave Parameters");
-		ImGui::SliderFloat("Wave Amplitude",	m_Terrain.GetAmplitude(), 0.0f, 10.0f);
-		ImGui::SliderFloat("Wavelength",		m_Terrain.GetWavelength(), 0.0f, 1.0f);
+	ImGui::SliderFloat("Wave Amplitude", m_Terrain.GetAmplitude(), 0.0f, 10.0f);
+	ImGui::SliderFloat("Wavelength", m_Terrain.GetWavelength(), 0.0f, 1.0f);
+	if (ImGui::Button("Generate Wave Height Map")) {
+		m_Terrain.GenerateWaveHeightMap();
+	}
 	ImGui::End();
+
+	ImGui::Begin("Noise Map Parameters");
+	ImGui::SliderFloat("Noise X Offset", m_Terrain.GetNoiseX(), -0.5f, 0.5f);
+	ImGui::SliderFloat("Noise Y Offset", m_Terrain.GetNoiseY(), -0.5f, 0.5f);
+	ImGui::SliderFloat("Noise Scale", m_Terrain.GetNoiseScale(), 0.0001f, 0.1f);
+	ImGui::SliderFloat("Noise Amplitude", m_Terrain.GetNoiseAmplitude(), 0.0f, 50.f);
+	if (ImGui::Button("Generate Random Height Map")) {
+		m_Terrain.GenerateRandomHeightMap();
+	}
+
+	ImGui::Checkbox("Toggle Additive(T) vs Multiplicative(F)", m_Terrain.GetNoiseMulToggle());
+	if (ImGui::Button("Generate Add/Multiply Blend Height Map")) {
+		m_Terrain.GenerateAdditiveOrMultiplyNoiseMap();
+	}
+
+	ImGui::End();
+
+	ImGui::Begin("Layer Map Parameters");
+	ImGui::SliderInt("Layer Number", m_Terrain.GetLayerCount(), 0, 20);
+	ImGui::SliderFloat("Layer Height", m_Terrain.GetLayerHeight(), 0.1f, 10.0f);
+	ImGui::Checkbox("Add Layer Steps?", m_Terrain.GetLayerSteps());
+	ImGui::Checkbox("Add 3D Noise?", m_Terrain.GetLayerNoise());
+	if (ImGui::Button("Generate Layered Noise Height Map")) {
+		m_Terrain.GenerateLayeredNoiseMap();
+	}
+
+
+	if (ImGui::Button("Smoothen Terrain")) {
+		m_Terrain.SmoothenHeightMap();
+	}
+	ImGui::End();
+
 }
 
 

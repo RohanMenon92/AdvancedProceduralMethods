@@ -31,6 +31,21 @@ bool Terrain::Initialize(ID3D11Device* device, int terrainWidth, int terrainHeig
 	m_amplitude = 3.0;
 	m_wavelength = 1;
 
+	m_noiseX = 2.0;
+	m_noiseY = 2.0;
+	m_noiseAmplitude = 3.0;
+	m_noiseScale = 0.01;
+
+	m_noiseAddMulToggle = false;
+
+	m_layerCount = 2;
+	m_layerHeight = 0.3;
+	m_layerNoised = false;
+	m_layerSteps = true;
+
+
+	deviceRef = device;
+
 	// Create the structure to hold the terrain data.
 	m_heightMap = new HeightMapType[m_terrainWidth * m_terrainHeight];
 	if (!m_heightMap)
@@ -61,7 +76,7 @@ bool Terrain::Initialize(ID3D11Device* device, int terrainWidth, int terrainHeig
 	}
 
 	// Initialize the vertex and index buffer that hold the geometry for the terrain.
-	result = InitializeBuffers(device);
+	result = InitializeBuffers();
 	if (!result)
 	{
 		return false;
@@ -235,7 +250,7 @@ void Terrain::Shutdown()
 	return;
 }
 
-bool Terrain::InitializeBuffers(ID3D11Device * device )
+bool Terrain::InitializeBuffers()
 {
 	VertexType* vertices;
 	unsigned long* indices;
@@ -342,7 +357,7 @@ bool Terrain::InitializeBuffers(ID3D11Device * device )
 	vertexData.SysMemSlicePitch = 0;
 
 	// Now create the vertex buffer.
-	result = device->CreateBuffer(&vertexBufferDesc, &vertexData, &m_vertexBuffer);
+	result = deviceRef->CreateBuffer(&vertexBufferDesc, &vertexData, &m_vertexBuffer);
 	if (FAILED(result))
 	{
 		return false;
@@ -362,7 +377,7 @@ bool Terrain::InitializeBuffers(ID3D11Device * device )
 	indexData.SysMemSlicePitch = 0;
 
 	// Create the index buffer.
-	result = device->CreateBuffer(&indexBufferDesc, &indexData, &m_indexBuffer);
+	result = deviceRef->CreateBuffer(&indexBufferDesc, &indexData, &m_indexBuffer);
 	if (FAILED(result))
 	{
 		return false;
@@ -399,7 +414,7 @@ void Terrain::RenderBuffers(ID3D11DeviceContext * deviceContext)
 	return;
 }
 
-bool Terrain::GenerateWaveHeightMap(ID3D11Device* device)
+bool Terrain::GenerateWaveHeightMap()
 {
 	bool result;
 
@@ -429,7 +444,7 @@ bool Terrain::GenerateWaveHeightMap(ID3D11Device* device)
 		return false;
 	}
 
-	result = InitializeBuffers(device);
+	result = InitializeBuffers();
 	if (!result)
 	{
 		return false;
@@ -437,29 +452,25 @@ bool Terrain::GenerateWaveHeightMap(ID3D11Device* device)
 }
 
 // Create Random height map
-bool Terrain::GenerateRandomHeightMap(ID3D11Device* device)
+bool Terrain::GenerateRandomHeightMap()
 {
 	bool result;
 
 	int index;
 	float height = 0.0;
 
-	m_frequency = (6.283 / m_terrainHeight) / m_wavelength; //we want a wavelength of 1 to be a single wave over the whole terrain.  A single wave is 2 pi which is about 6.283
-
-															//loop through the terrain and set the hieghts how we want. This is where we generate the terrain
-															//in this case I will run a sin-wave through the terrain in one axis.
-
 	for (int j = 0; j<m_terrainHeight; j++)
 	{
 		for (int i = 0; i<m_terrainWidth; i++)
 		{
+			// Check for edge terrain
 			if (i != 0 && i != (m_terrainWidth - 1) && j != 0 && j != m_terrainHeight - 1) {
 				index = (m_terrainHeight * j) + i;
 
 				m_heightMap[index].x = (float)i;
 				//m_heightMap[index].y = (float)(m_frequency * (rand() % (int)(m_amplitude * 9)));
 
-				m_heightMap[index].y = (float) Noise(i*0.2f*m_wavelength, j*0.2f*m_wavelength) * m_amplitude;
+				m_heightMap[index].y = (float) Noise(i * m_noiseScale * m_noiseX, j * m_noiseScale * m_noiseY) * m_noiseAmplitude;
 				m_heightMap[index].z = (float)j;
 			}
 		}
@@ -471,23 +482,18 @@ bool Terrain::GenerateRandomHeightMap(ID3D11Device* device)
 		return false;
 	}
 
-	result = InitializeBuffers(device);
+	result = InitializeBuffers();
 	if (!result)
 	{
 		return false;
 	}
 }
-bool Terrain::GenerateAdditiveRandomHeightMap(ID3D11Device* device)
+bool Terrain::GenerateAdditiveOrMultiplyNoiseMap()
 {
 	bool result;
 
 	int index;
 	float height = 0.0;
-
-	//m_frequency = (6.283 / m_terrainHeight) / m_wavelength; //we want a wavelength of 1 to be a single wave over the whole terrain.  A single wave is 2 pi which is about 6.283
-
-															//loop through the terrain and set the hieghts how we want. This is where we generate the terrain
-															//in this case I will run a sin-wave through the terrain in one axis.
 
 	for (int j = 0; j<m_terrainHeight; j++)
 	{
@@ -498,7 +504,8 @@ bool Terrain::GenerateAdditiveRandomHeightMap(ID3D11Device* device)
 			m_heightMap[index].x = (float)i;
 			// Check for edge terrain
 			if (i != 0 && i != (m_terrainWidth - 1) && j != 0 && j != m_terrainHeight - 1) {
-				m_heightMap[index].y = (float)(m_heightMap[index].y * (rand() % (int)(3)) + 1);
+				float noiseValue = Noise(i * m_noiseScale * m_noiseX, j * m_noiseScale * m_noiseY) * m_noiseAmplitude;
+				m_heightMap[index].y = m_noiseAddMulToggle ? m_heightMap[index].y + noiseValue : m_heightMap[index].y * noiseValue;
 			}
 			m_heightMap[index].z = (float)j;
 		}
@@ -510,14 +517,57 @@ bool Terrain::GenerateAdditiveRandomHeightMap(ID3D11Device* device)
 		return false;
 	}
 
-	result = InitializeBuffers(device);
+	result = InitializeBuffers();
 	if (!result)
 	{
 		return false;
 	}
 }
 
-bool Terrain::SmoothenHeightMap(ID3D11Device* device) {
+bool Terrain::GenerateLayeredNoiseMap() {
+	bool result;
+
+	int index;
+	float height = 0.0;
+
+	for (int j = 0; j < m_terrainHeight; j++)
+	{
+		for (int i = 0; i < m_terrainWidth; i++)
+		{
+			index = (m_terrainHeight * j) + i;
+
+			float layerNoise = (Noise(i * m_noiseScale * m_noiseX, j * m_noiseScale * m_noiseY) + 1)/2;
+
+			m_heightMap[index].x = (float)i;
+			// Check for edge terrain
+			if (i != 0 && i != (m_terrainWidth - 1) && j != 0 && j != m_terrainHeight - 1) {
+
+				float layerHeight = m_layerHeight * (float)(m_layerSteps ? (int)(layerNoise * m_layerCount) : layerNoise * m_layerCount);
+				if (m_layerNoised) {
+					m_heightMap[index].y = m_noiseAddMulToggle ? layerNoise + layerHeight : layerNoise * layerHeight;
+				}
+				else {
+					m_heightMap[index].y = layerHeight;
+				}
+			}
+			m_heightMap[index].z = (float)j;
+		}
+	}
+
+	result = CalculateNormals();
+	if (!result)
+	{
+		return false;
+	}
+
+	result = InitializeBuffers();
+	if (!result)
+	{
+		return false;
+	}
+}
+
+bool Terrain::SmoothenHeightMap() {
 	bool result;
 
 	int index;
@@ -554,7 +604,7 @@ bool Terrain::SmoothenHeightMap(ID3D11Device* device) {
 		return false;
 	}
 
-	result = InitializeBuffers(device);
+	result = InitializeBuffers();
 	if (!result)
 	{
 		return false;
@@ -576,17 +626,60 @@ float* Terrain::GetAmplitude()
 	return &m_amplitude;
 }
 
+float* Terrain::GetNoiseX()
+{
+	return &m_noiseX;
+}
+
+float* Terrain::GetNoiseY()
+{
+	return &m_noiseY;
+}
+
+float* Terrain::GetNoiseScale()
+{
+	return &m_noiseScale;
+}
+
+float* Terrain::GetNoiseAmplitude()
+{
+	return &m_noiseAmplitude;
+}
+
+bool* Terrain::GetNoiseMulToggle() 
+{
+	return &m_noiseAddMulToggle;
+}
+
+int* Terrain::GetLayerCount()
+{
+	return &m_layerCount;
+}
+
+float* Terrain::GetLayerHeight()
+{
+	return &m_layerHeight;
+}
+
+bool* Terrain::GetLayerNoise()
+{
+	return &m_layerNoised;
+}
+bool* Terrain::GetLayerSteps()
+{
+	return &m_layerSteps;
+}
 // Perlin Noise Generation
 // 2D simplex noise
 double Terrain::Noise(double xin, double yin) {
 	double n0, n1, n2; // Noise contributions from the three corners
 					   // Skew the input space to determine which simplex cell we're in
-	double F2 = 0.5*(sqrt(3.0) - 1.0);
-	double s = (xin + yin)*F2; // Hairy factor for 2D
+	double F2 = 0.5 * (sqrt(3.0) - 1.0);
+	double s = (xin + yin) * F2; // Hairy factor for 2D
 	int i = FastFloor(xin + s);
 	int j = FastFloor(yin + s);
 	double G2 = (3.0 - sqrt(3.0)) / 6.0;
-	double t = (i + j)*G2;
+	double t = (i + j) * G2;
 	double X0 = i - t; // Unskew the cell origin back to (x,y) space
 	double Y0 = j - t;
 	double x0 = xin - X0; // The x,y distances from the cell origin
@@ -594,7 +687,7 @@ double Terrain::Noise(double xin, double yin) {
 	// For the 2D case, the simplex shape is an equilateral triangle.
 	// Determine which simplex we are in.
 	int i1, j1; // Offsets for second (middle) corner of simplex in (i,j) coords
-	if (x0>y0) { i1 = 1; j1 = 0; } // lower triangle, XY order: (0,0)->(1,0)->(1,1)
+	if (x0 > y0) { i1 = 1; j1 = 0; } // lower triangle, XY order: (0,0)->(1,0)->(1,1)
 	else { i1 = 0; j1 = 1; } // upper triangle, YX order: (0,0)->(0,1)->(1,1)
 							 // A step of (1,0) in (i,j) means a step of (1-c,-c) in (x,y), and
 							 // a step of (0,1) in (i,j) means a step of (-c,1-c) in (x,y), where
@@ -611,19 +704,19 @@ double Terrain::Noise(double xin, double yin) {
 	int gi2 = permMap[ii + 1 + permMap[jj + 1]] % 12;
 	// Calculate the contribution from the three corners
 	double t0 = 0.5 - x0 * x0 - y0 * y0;
-	if (t0<0) n0 = 0.0;
+	if (t0 < 0) n0 = 0.0;
 	else {
 		t0 *= t0;
 		n0 = t0 * t0 * Dot(gradient3map[gi0], x0, y0); // (x,y) of grad3 used for 2D gradient
 	}
 	double t1 = 0.5 - x1 * x1 - y1 * y1;
-	if (t1<0) n1 = 0.0;
+	if (t1 < 0) n1 = 0.0;
 	else {
 		t1 *= t1;
 		n1 = t1 * t1 * Dot(gradient3map[gi1], x1, y1);
 	}
 	double t2 = 0.5 - x2 * x2 - y2 * y2;
-	if (t2<0) n2 = 0.0;
+	if (t2 < 0) n2 = 0.0;
 	else {
 		t2 *= t2;
 		n2 = t2 * t2 * Dot(gradient3map[gi2], x2, y2);
@@ -635,7 +728,7 @@ double Terrain::Noise(double xin, double yin) {
 
 // This method is a *lot* faster than using (int)Math.floor(x)
 int Terrain::FastFloor(double x) {
-	return x>0 ? (int)x : (int)x - 1;
+	return x > 0 ? (int)x : (int)x - 1;
 }
 
 double Terrain::Dot(int g[], double x, double y) {

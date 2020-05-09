@@ -5,6 +5,8 @@ using namespace DirectX;
 class Terrain
 {
 private:
+	ID3D11Device* deviceRef;
+
 	struct VertexType
 	{
 		DirectX::SimpleMath::Vector3 position;
@@ -15,7 +17,6 @@ private:
 	{
 		float x, y, z;
 		float nx, ny, nz;
-		
 	};
 	
 	// For generating gradient values
@@ -45,21 +46,32 @@ public:
 
 	bool Initialize(ID3D11Device*, int terrainWidth, int terrainHeight);
 	void Render(ID3D11DeviceContext*);
-	bool GenerateWaveHeightMap(ID3D11Device*);
-	bool GenerateRandomHeightMap(ID3D11Device*);
-	bool GenerateAdditiveRandomHeightMap(ID3D11Device*);
-	bool SmoothenHeightMap(ID3D11Device*);
+	bool GenerateWaveHeightMap();
+	bool GenerateRandomHeightMap();
+	bool GenerateAdditiveOrMultiplyNoiseMap();
+	bool GenerateLayeredNoiseMap();
+	bool SmoothenHeightMap();
 	bool IsEdgeIndex(int index);
 	bool Update();
-	float* GetWavelength();
 
+	// Getters for imgui
+	float* GetWavelength();
 	float* GetAmplitude();
+	float* GetNoiseX();
+	float* GetNoiseY();
+	float* GetNoiseScale();
+	float* GetNoiseAmplitude();
+	bool* GetNoiseMulToggle();
+	int* GetLayerCount();
+	float* GetLayerHeight();
+	bool* GetLayerNoise();
+	bool* GetLayerSteps();
 
 private:
 	bool CalculateNormals();
 	void Shutdown();
 	void ShutdownBuffers();
-	bool InitializeBuffers(ID3D11Device*);
+	bool InitializeBuffers();
 	void RenderBuffers(ID3D11DeviceContext*);
 	
 
@@ -69,6 +81,14 @@ private:
 	ID3D11Buffer * m_vertexBuffer, *m_indexBuffer;
 	int m_vertexCount, m_indexCount;
 	float m_frequency, m_amplitude, m_wavelength;
+
+	bool m_noiseAddMulToggle;
+	float m_noiseX, m_noiseY, m_noiseAmplitude, m_noiseScale;
+	
+	int m_layerCount;
+	float m_layerHeight;
+	bool m_layerNoised, m_layerSteps;
+	
 	HeightMapType* m_heightMap;
 
 	//arrays for our generated objects Made by directX
