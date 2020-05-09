@@ -1,0 +1,41 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(459,5): warning MSB8028: The intermediate directory (Bin\Desktop_2015\x64\Debug\) contains files shared from another project (DirectXTKSimpleSample_2015.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  compilation object save succeeded; see C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\colour_ps.cso
+  compilation object save succeeded; see C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\colour_vs.cso
+  compilation object save succeeded; see C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\light_ps.cso
+  compilation object save succeeded; see C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\light_vs.cso
+  pch.cpp
+  Camera.cpp
+  DeviceResources.cpp
+  Game.cpp
+  imgui.cpp
+  imgui_demo.cpp
+  imgui_draw.cpp
+  imgui_impl_dx11.cpp
+  imgui_impl_win32.cpp
+  imgui_widgets.cpp
+  Input.cpp
+  Light.cpp
+  Main.cpp
+  modelclass.cpp
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\modelclass.cpp(30,39): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\modelclass.cpp(31,37): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\modelclass.cpp(46,39): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\modelclass.cpp(47,37): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\modelclass.cpp(63,39): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\modelclass.cpp(64,37): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\modelclass.cpp(255,28): warning C4477: 'fscanf_s' : format string '%s' requires an argument of type 'unsigned int', but variadic argument 2 has type 'size_t'
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\modelclass.cpp(255,28): message : this argument is used as a buffer size
+  RenderTexture.cpp
+  Shader.cpp
+  Terrain.cpp
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Terrain.cpp(30,31): warning C4244: '=': conversion from 'int' to 'float', possible loss of data
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Terrain.cpp(284,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Terrain.cpp(409,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Terrain.cpp(447,42): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  Generating Code...
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Terrain.cpp(479): warning C4715: 'Terrain::GenerateRandomHeightMap': not all control paths return a value
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Terrain.cpp(437): warning C4715: 'Terrain::GenerateWaveHeightMap': not all control paths return a value
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Terrain.cpp(562): warning C4715: 'Terrain::SmoothenHeightMap': not all control paths return a value
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Terrain.cpp(518): warning C4715: 'Terrain::GenerateAdditiveRandomHeightMap': not all control paths return a value
+     Creating library Bin\Desktop_2015\x64\Debug\AdvancedProcedural-1901120.lib and object Bin\Desktop_2015\x64\Debug\AdvancedProcedural-1901120.exp
+  DirectXTKSimpleSample_2015.vcxproj -> C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Bin\Desktop_2015\x64\Debug\AdvancedProcedural-1901120.exe
