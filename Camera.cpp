@@ -6,98 +6,168 @@
 
 Camera::Camera()
 {
-	//initalise values. 
-	//Orientation and Position are how we control the camera. 
-	m_orientation.x = -90.0f;		//rotation around x - pitch
-	m_orientation.y = 0.0f;		//rotation around y - yaw
-	m_orientation.z = 0.0f;		//rotation around z - roll	//we tend to not use roll a lot in first person
+	position.x = 0.0f;
+	position.y = 0.0f;
+	position.z = 0.0f;
 
-	m_position.x = 0.0f;		//camera position in space. 
-	m_position.y = 0.0f;
-	m_position.z = 0.0f;
+	rotation.x = 0.0f;
+	rotation.y = 0.0f;
+	rotation.z = 0.0f;
 
-	//These variables are used for internal calculations and not set.  but we may want to queary what they 
-	//externally at points
-	m_lookat.x = 0.0f;		//Look target point
-	m_lookat.y = 0.0f;
-	m_lookat.z = 0.0f;
-
-	m_forward.x = 0.0f;		//forward/look direction
-	m_forward.y = 0.0f;
-	m_forward.z = 0.0f;
-
-	m_right.x = 0.0f;
-	m_right.y = 0.0f;
-	m_right.z = 0.0f;
-	
 	//
-	m_movespeed = 0.30;
-	m_camRotRate = 3.0;
+	movespeed = 0.30;
+	camRotRate = 3.0;
 
 	//force update with initial values to generate other camera data correctly for first update. 
-	Update();
 }
 
+bool Camera::Initialize(ID3D11Device* odevice)
+{
+	bool result;
+
+	device = odevice;
+
+	timer = new TimerClass();
+	if (!timer)
+	{
+		return false;
+	}
+
+	result = timer->Initialize();
+	if (!result)
+	{
+		return false;
+	}
+
+	SetPosition(0.0f, 0.0f, 4.0f);
+	SetRotation(-90.0f, -90.0f, 0.0f);	//orientation is -90 becuase zero will be looking up at the sky straight up. 
+
+	return true;
+}
 
 Camera::~Camera()
 {
 }
 
-void Camera::Update()
+void Camera::SetPosition(float x, float y, float z)
 {
-	//rotation in yaw - using the paramateric equation of a circle
-	m_forward.x = sin((m_orientation.y)*3.1415f / 180.0f);
-	m_forward.z = cos((m_orientation.y)*3.1415f / 180.0f);
-	m_forward.Normalize();
-
-	//create right vector from look Direction
-	m_forward.Cross(DirectX::SimpleMath::Vector3::UnitY, m_right);
-
-	//update lookat point
-	m_lookat = m_position + m_forward;
-
-	//apply camera vectors and create camera matrix
-	m_cameraMatrix = (DirectX::SimpleMath::Matrix::CreateLookAt(m_position, m_lookat, DirectX::SimpleMath::Vector3::UnitY));
-
-
+	position.x = x;
+	position.y = y;
+	position.z = z;
 }
 
-DirectX::SimpleMath::Matrix Camera::getCameraMatrix()
+void Camera::SetRotation(float x, float y, float z)
 {
-	return m_cameraMatrix;
+	rotation.x = x;
+	rotation.y = y;
+	rotation.z = z;
 }
 
-void Camera::setPosition(DirectX::SimpleMath::Vector3 newPosition)
+void Camera::Shutdown()
 {
-	m_position = newPosition;
+	if (timer)
+	{
+		delete timer;
+		timer = nullptr;
+	}
 }
 
-DirectX::SimpleMath::Vector3 Camera::getPosition()
+DirectX::SimpleMath::Vector3 Camera::GetPosition()
 {
-	return m_position;
+	return position;
 }
 
-DirectX::SimpleMath::Vector3 Camera::getForward()
+DirectX::SimpleMath::Vector3 Camera::GetForward()
 {
-	return m_forward;
+	return viewMatrix.Forward();
 }
 
-void Camera::setRotation(DirectX::SimpleMath::Vector3 newRotation)
+DirectX::SimpleMath::Vector3 Camera::GetUp()
 {
-	m_orientation = newRotation;
+	return viewMatrix.Up();
 }
 
-DirectX::SimpleMath::Vector3 Camera::getRotation()
+DirectX::SimpleMath::Vector3 Camera::GetRotation()
 {
-	return m_orientation;
+	return rotation;
 }
 
-float Camera::getMoveSpeed()
+void Camera::DoMovement(InputCommands* input)
 {
-	return m_movespeed;
+	unsigned int wkey = 0x57;
+	unsigned int skey = 0x53;
+	unsigned int akey = 0x41;
+	unsigned int dkey = 0x44;
+	Vector3 movementDirection;
+	timer->Frame();
+
+
+	float deltaTime = timer->GetFrameTime();
+	float cameraSpeed = 0.0025f * deltaTime;
+	float rotationSpeed = 0.1f * deltaTime;
+	viewQuaternion.Inverse(viewQuaternion);
+
+	//Movement
+	if (input->forward)
+	{
+		movementDirection = Vector3::Transform(Vector3::Forward, viewQuaternion);
+		position += cameraSpeed * movementDirection;
+	}
+	if (input->back)
+	{
+		movementDirection = Vector3::Transform(Vector3::Forward, viewQuaternion);
+		position -= movementDirection * cameraSpeed;
+	}
+	if (input->left)
+	{
+		movementDirection = Vector3::Transform(Vector3::Forward.Cross(Vector3::Up), viewQuaternion);
+		position -= cameraSpeed * movementDirection;
+	}
+	if (input->right)
+	{
+		movementDirection = Vector3::Transform(Vector3::Forward.Cross(Vector3::Up), viewQuaternion);
+		position += cameraSpeed * movementDirection;
+	}
+
+	//Rotation
+	if (input->rotUp)
+	{
+		rotation.x -= rotationSpeed * 0.5f;
+	}
+	if (input->rotDown)
+	{
+		rotation.x += rotationSpeed * 0.5f;
+	}
+	if (input->rotLeft)
+	{
+		rotation.y += rotationSpeed * 1;
+	}
+	if (input->rotRight)
+	{
+		rotation.y -= rotationSpeed * 1;
+	}
 }
 
-float Camera::getRotationSpeed()
+void Camera::Render()
 {
-	return m_camRotRate;
+	float yaw, pitch, roll;
+
+	//Set Rotation in radians
+	pitch = rotation.x * 0.0174532925f;
+	yaw = rotation.y * 0.0174532925f;
+	roll = rotation.z * 0.0174532925f;
+
+	viewQuaternion = Quaternion::CreateFromYawPitchRoll(yaw, pitch, roll);
+
+	//Finally create view matrix
+	//viewMatrix = XMMatrixLookAtLH(positionVector, lookAtVector, upVector);
+	viewQuaternion.Inverse(viewQuaternion);
+	viewMatrix = Matrix::Identity;
+	//Translate to position of viewer
+	viewMatrix = viewMatrix.Transform(Matrix::CreateTranslation(-position), viewQuaternion);
+}
+
+void Camera::GetViewMatrix(DirectX::SimpleMath::Matrix& output)
+{
+	output = viewMatrix;
 }

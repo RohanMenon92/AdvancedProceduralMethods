@@ -73,10 +73,8 @@ void Game::Initialize(HWND window, int width, int height)
 	m_Light.setPosition(2.0f, 1.0f, 1.0f);
 	m_Light.setDirection(-1.0f, -1.0f, 0.0f);
 
-	//setup camera
-	m_Camera.setPosition(Vector3(0.0f, 0.0f, 4.0f));
-	m_Camera.setRotation(Vector3(-90.0f, -180.0f, 0.0f));	//orientation is -90 becuase zero will be looking up at the sky straight up. 
-
+	
+	m_Camera.Initialize(m_deviceResources->GetD3DDevice());
 	
 #ifdef DXTK_AUDIO
     // Create DirectXTK for Audio objects
@@ -135,31 +133,7 @@ void Game::Tick()
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
-	//note that currently.  Delta-time is not considered in the game object movement. 
-	if (m_gameInputCommands.left)
-	{
-		Vector3 rotation = m_Camera.getRotation();
-		rotation.y = rotation.y += m_Camera.getRotationSpeed();
-		m_Camera.setRotation(rotation);
-	}
-	if (m_gameInputCommands.right)
-	{
-		Vector3 rotation = m_Camera.getRotation();
-		rotation.y = rotation.y -= m_Camera.getRotationSpeed();
-		m_Camera.setRotation(rotation);
-	}
-	if (m_gameInputCommands.forward)
-	{
-		Vector3 position = m_Camera.getPosition(); //get the position
-		position += (m_Camera.getForward()*m_Camera.getMoveSpeed()); //add the forward vector
-		m_Camera.setPosition(position);
-	}
-	if (m_gameInputCommands.back)
-	{
-		Vector3 position = m_Camera.getPosition(); //get the position
-		position -= (m_Camera.getForward()*m_Camera.getMoveSpeed()); //add the forward vector
-		m_Camera.setPosition(position);
-	}
+	m_Camera.DoMovement(&m_gameInputCommands);
 
 	if (m_gameInputCommands.waveGenerate)
 	{
@@ -181,10 +155,8 @@ void Game::Update(DX::StepTimer const& timer)
 		m_Terrain.SmoothenHeightMap();
 	}
 
-	m_Camera.Update();	//camera update.
 	m_Terrain.Update();		//terrain update.  doesnt do anything at the moment. 
 
-	m_view = m_Camera.getCameraMatrix();
 	m_world = Matrix::Identity;
 
 	/*create our UI*/
@@ -227,6 +199,14 @@ void Game::Update(DX::StepTimer const& timer)
 // Draws the scene.
 void Game::Render()
 {	
+	DirectX::SimpleMath::Matrix viewMatrix, projectionMatrix, translateMatrix;
+
+	m_Camera.Render();
+
+	//Get world, view and proj matrices
+	//direct3D->GetWorldMatrix(worldMatrix);
+	m_Camera.GetViewMatrix(viewMatrix);
+
     // Don't try to render anything before the first Update.
     if (m_timer.GetFrameCount() == 0)
     {
@@ -259,7 +239,7 @@ void Game::Render()
 
 	//setup and draw cube
 	m_BasicShaderPair.EnableShader(context);
-	m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture1.Get(), m_texture2.Get());
+	m_BasicShaderPair.SetShaderParameters(context, &m_world, &viewMatrix, &m_projection, &m_Light, m_texture1.Get(), m_texture2.Get());
 	m_Terrain.Render(context);
 	
 	//render our GUI

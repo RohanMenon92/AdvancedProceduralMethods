@@ -10,6 +10,8 @@ struct InputCommands
 	bool back;
 	bool right;
 	bool left;
+	bool rotUp;
+	bool rotDown;
 	bool rotRight;
 	bool rotLeft;
 	bool waveGenerate;

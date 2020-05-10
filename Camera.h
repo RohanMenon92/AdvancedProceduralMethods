@@ -1,31 +1,58 @@
 #pragma once
+
+#include <d3d11.h>
+#include "SimpleMath.h"
+#include "TimerClass.h"
+#include <vector>
+#include "Input.h"
+#include "pch.h"
+
+using namespace DirectX;
+using namespace SimpleMath;
+
 class Camera
 {
 public:
+	struct ControlPoint
+	{
+		Vector3 position;
+		Quaternion direction;
+	};
+
 	Camera();
+	Camera(const Camera&);
 	~Camera();
 
-	void							Update();
-	DirectX::SimpleMath::Matrix		getCameraMatrix();
-	void							setPosition(DirectX::SimpleMath::Vector3 newPosition);
-	DirectX::SimpleMath::Vector3	getPosition();
-	DirectX::SimpleMath::Vector3	getForward();
-	void							setRotation(DirectX::SimpleMath::Vector3 newRotation);
-	DirectX::SimpleMath::Vector3	getRotation();
-	float							getMoveSpeed();
-	float							getRotationSpeed();
+	void SetPosition(float, float, float);
+	void SetRotation(float, float, float);
+
+	bool Initialize(ID3D11Device*);
+	void Shutdown();
+
+	DirectX::SimpleMath::Vector3 GetPosition();
+	DirectX::SimpleMath::Vector3 GetForward();
+	DirectX::SimpleMath::Vector3 GetUp();
+	DirectX::SimpleMath::Vector3 GetRotation();
+
+	//float GetMoveSpeed();
+	//float GetRotationSpeed();
+
+	void DoMovement(InputCommands*);
+
+	void Render();
+	void GetViewMatrix(DirectX::SimpleMath::Matrix&);
 
 private:
-	DirectX::SimpleMath::Matrix		m_cameraMatrix;			//camera matrix to be passed out and used to set camera position and angle for wrestling
-	DirectX::SimpleMath::Vector3	m_lookat;
-	DirectX::SimpleMath::Vector3	m_position;
-	DirectX::SimpleMath::Vector3	m_forward;
-	DirectX::SimpleMath::Vector3	m_right;
-	DirectX::SimpleMath::Vector3	m_up;
-	DirectX::SimpleMath::Vector3	m_orientation;			//vector storing pitch yaw and roll. 
 
-	float	m_movespeed ;	
-	float	m_camRotRate;
 
+	ID3D11Device* device;
+	Vector3 position, rotation;
+	Matrix viewMatrix;
+	TimerClass* timer;
+	Quaternion viewQuaternion;
+
+	float movespeed;
+	float camRotRate;
 };
+
 

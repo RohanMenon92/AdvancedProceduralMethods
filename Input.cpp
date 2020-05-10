@@ -53,6 +53,22 @@ void Input::Update()
 	if (kb.S)	m_GameInput.back = true;
 	else		m_GameInput.back = false;
 
+	//Left key
+	if (kb.Left)	m_GameInput.rotLeft = true;
+	else		m_GameInput.rotLeft = false;
+
+	//Right key
+	if (kb.Right)	m_GameInput.rotRight = true;
+	else		m_GameInput.rotRight = false;
+
+	//UP key
+	if (kb.Up)	m_GameInput.rotUp = true;
+	else		m_GameInput.rotUp = false;
+
+	//DOWN key
+	if (kb.Down)	m_GameInput.rotDown = true;
+	else		m_GameInput.rotDown = false;
+
 	//wave
 	if (kb.Space) m_GameInput.waveGenerate = true;
 	else		m_GameInput.waveGenerate = false;
