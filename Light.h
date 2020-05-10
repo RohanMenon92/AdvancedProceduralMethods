@@ -9,6 +9,7 @@
 #include <directxmath.h>
 
 using namespace DirectX;
+using namespace DirectX::SimpleMath;
 
 class Light
 {
@@ -28,31 +29,35 @@ public:
 	~Light();
 
 	// Setters
-	void setAmbientColour(float red, float green, float blue, float alpha);		///< Set ambient colour RGBA
-	void setDiffuseColour(float red, float green, float blue, float alpha);		///< Set diffuse colour RGBA
-	void setDirection(float x, float y, float z);								///< Set light direction (for directional lights)
-	void setSpecularColour(float red, float green, float blue, float alpha);	///< set specular colour RGBA
-	void setSpecularPower(float power);											///< Set specular power
-	void setPosition(float x, float y, float z);								///< Set light position (for point lights)
-	void setLookAt(float x, float y, float z);									///< Set light lookAt (near deprecation)
+	void SetAmbientColour(float red, float green, float blue, float alpha);		///< Set ambient colour RGBA
+	void SetDiffuseColour(float red, float green, float blue, float alpha);		///< Set diffuse colour RGBA
+	void SetDirection(float x, float y, float z);								///< Set light direction (for directional lights)
+	void SetSpecularColour(float red, float green, float blue, float alpha);	///< set specular colour RGBA
+	void SetSpecularPower(float power);											///< Set specular power
+	void SetPosition(float x, float y, float z);								///< Set light position (for point lights)
+	void SetLookAt(float x, float y, float z);									///< Set light lookAt (near deprecation)
 
 	// Getters
-	DirectX::SimpleMath::Vector4 getAmbientColour();		///< Get ambient colour, returns float4
-	DirectX::SimpleMath::Vector4 getDiffuseColour();		///< Get diffuse colour, returns float4
-	DirectX::SimpleMath::Vector3 getDirection();			///< Get light direction, returns float3
-	DirectX::SimpleMath::Vector4 getSpecularColour();		///< Get specular colour, returns float4
-	float getSpecularPower();								///< Get specular power, returns float
-	DirectX::SimpleMath::Vector3 getPosition();				///< Get light position, returns float3
+	XMFLOAT4 GetAmbientColour();		///< Get ambient colour, returns float4
+	XMFLOAT4 GetDiffuseColour();		///< Get diffuse colour, returns float4
+	XMFLOAT4 GetDirection();			///< Get light direction, returns float3
+	XMFLOAT4 GetSpecularColour();		///< Get specular colour, returns float4
+	float GetSpecularPower();				///< Get specular power, returns float
+	XMFLOAT3 GetPosition();				///< Get light position, returns float3
 
+	void GenerateViewMatrix();
+	void GenerateProjectionsMatrix(float, float);
+
+	void GetViewMatrix(XMMATRIX&);
+	void GetProjectionMatrix(XMMATRIX&);
 
 protected:
-	DirectX::SimpleMath::Vector4 m_ambientColour;
-	DirectX::SimpleMath::Vector4 m_diffuseColour;
-	DirectX::SimpleMath::Vector3 m_direction;
-	DirectX::SimpleMath::Vector4 m_specularColour;
+	XMMATRIX viewMatrix, projectionMatrix;
+	Vector4 m_specularColour, m_lookAt, m_ambientColour, m_diffuseColour;
+
+	Vector3 m_direction, m_position;
+	
 	float m_specularPower;
-	DirectX::SimpleMath::Vector3 m_position;
-	DirectX::SimpleMath::Vector4 m_lookAt;
 };
 
 #endif

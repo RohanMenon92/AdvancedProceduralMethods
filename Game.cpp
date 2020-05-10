@@ -1,26 +1,35 @@
 //
 // Game.cpp
 //
-
 #include "pch.h"
 #include "Game.h"
-
-
-//toreorganise
-#include <fstream>
+using namespace DirectX;
 
 extern void ExitGame();
-
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 using namespace ImGui;
-
 using Microsoft::WRL::ComPtr;
+
+namespace GraphicsConfig
+{
+	const bool FULL_SCREEN = false;
+	const bool VSYNC_ENABLED = true;
+	const float SCREEN_DEPTH = 5000.0f;
+	const float SCREEN_NEAR = 0.01f;
+	const int SHADOWMAP_WIDTH = 2048;
+	const int SHADOWMAP_HEIGHT = 2048;
+}
 
 Game::Game() noexcept(false)
 {
-    m_deviceResources = std::make_unique<DX::DeviceResources>();
-    m_deviceResources->RegisterDeviceNotify(this);
+    //m_deviceResources = std::make_unique<DX::DeviceResources>();
+    //m_deviceResources->RegisterDeviceNotify(this);
+
+	screenBuffer = nullptr;
+	screenTargetView = nullptr;
+	depthBuffer = nullptr;
+	depthTargetView = nullptr;
 }
 
 Game::~Game()
@@ -33,18 +42,53 @@ Game::~Game()
 #endif
 }
 
+void Game::SetupPrimitiveBatch()
+{
+	primitiveBatch = new PrimitiveBatch<VertexPositionColor>(direct3D->GetDeviceContext());
+
+	basicEffect = new BasicEffect(direct3D->GetDevice());
+	basicEffect->SetVertexColorEnabled(true);
+
+	void const* shaderByteCode;
+	size_t byteCodeLength;
+
+	basicEffect->GetVertexShaderBytecode(&shaderByteCode, &byteCodeLength);
+
+	direct3D->GetDevice()->CreateInputLayout(VertexPositionColor::InputElements,
+		VertexPositionColor::InputElementCount,
+		shaderByteCode, byteCodeLength,
+		&inputLayout);
+}
+
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
+	currentScreenWidth = width;
+	currentScreenHeight = height;
+
+	bool result;
+
+	//Set up Direct3D
+	direct3D = new D3DClass();
+	if (!direct3D)
+	{
+		MessageBox(window, L"Direct3D Class not defined", L"Error", MB_OK);
+	}
+
+	result = direct3D->Initialize(currentScreenWidth, currentScreenHeight, GraphicsConfig::VSYNC_ENABLED, window, GraphicsConfig::FULL_SCREEN, GraphicsConfig::SCREEN_DEPTH, GraphicsConfig::SCREEN_NEAR);
+	if (!result)
+	{
+		MessageBox(window, L"Could not initialize Direct3D", L"Error", MB_OK);
+	}
 
 	m_input.Initialise(window);
 
-    m_deviceResources->SetWindow(window, width, height);
+    //m_deviceResources->SetWindow(window, width, height);
 
-    m_deviceResources->CreateDeviceResources();
+    //m_deviceResources->CreateDeviceResources();
     CreateDeviceDependentResources();
 
-    m_deviceResources->CreateWindowSizeDependentResources();
+    //m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 
 	//setup imgui.  its up here cos we need the window handle too
@@ -55,7 +99,7 @@ void Game::Initialize(HWND window, int width, int height)
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	ImGui::StyleColorsDark();
 	ImGui_ImplWin32_Init(window);		//tie to our window
-	ImGui_ImplDX11_Init(m_deviceResources->GetD3DDevice(), m_deviceResources->GetD3DDeviceContext());	//tie to directx
+	ImGui_ImplDX11_Init(direct3D->GetDevice(), direct3D->GetDeviceContext());	//tie to directx
 
 	m_fullscreenRect.left = 0;
 	m_fullscreenRect.top = 0;
@@ -68,14 +112,42 @@ void Game::Initialize(HWND window, int width, int height)
 	m_CameraViewRect.bottom = 240;
 
 	//setup light
-	m_Light.setAmbientColour(0.3f, 0.3f, 0.3f, 1.0f);
-	m_Light.setDiffuseColour(1.0f, 1.0f, 1.0f, 1.0f);
-	m_Light.setPosition(2.0f, 1.0f, 1.0f);
-	m_Light.setDirection(-1.0f, -1.0f, 0.0f);
+	m_Light.SetAmbientColour(0.3f, 0.3f, 0.3f, 1.0f);
+	m_Light.SetDiffuseColour(1.0f, 1.0f, 1.0f, 1.0f);
+	m_Light.SetPosition(2.0f, 1.0f, 1.0f);
+	m_Light.SetDirection(-1.0f, -1.0f, 0.0f);
+	m_Light.SetLookAt(0.0f, 0.0f, 0.0f);
+	m_Light.GenerateProjectionsMatrix(GraphicsConfig::SCREEN_DEPTH, GraphicsConfig::SCREEN_NEAR);
+	
+	// Create timer for rotation
+	timer = new TimerClass();
+	timer->Initialize();
 
-	
-	m_Camera.Initialize(m_deviceResources->GetD3DDevice());
-	
+	m_Camera.Initialize(direct3D->GetDevice());
+	RegenerateTerrain();
+
+	shadowMap = new ShadowMap(direct3D->GetDevice(), direct3D->GetCurrentSampleCount(), direct3D->GetCurrentQualityLevel());
+
+	//Create RenderToTexture
+	renderTexture = new RenderTextureClass();
+	if (!renderTexture)
+	{
+		MessageBox(window, L"Could not initialize the render to texture object.", L"Error", MB_OK);
+	}
+
+	result = renderTexture->Initialize(direct3D->GetDevice(), GraphicsConfig::SHADOWMAP_WIDTH, GraphicsConfig::SHADOWMAP_HEIGHT, GraphicsConfig::SCREEN_DEPTH, GraphicsConfig::SCREEN_NEAR, direct3D->GetCurrentSampleCount(), direct3D->GetCurrentQualityLevel());
+	if (!result)
+	{
+		MessageBox(window, L"Could not initialize the render to texture object.", L"Error", MB_OK);
+	}
+
+	// Create First Back Buffer
+	GenerateScreenBuffer();
+
+	// SetupPrimiive For cube selector
+	SetupPrimitiveBatch();
+
+
 #ifdef DXTK_AUDIO
     // Create DirectXTK for Audio objects
     AUDIO_ENGINE_FLAGS eflags = AudioEngine_Default;
@@ -130,34 +202,59 @@ void Game::Tick()
 	
 }
 
+void Game::RegenerateTerrain()
+{
+	tree.PurgeTriangles();
+	delete terrain;
+
+	terrain = new GeometryData(terrainX, terrainY, terrainZ, GeometryData::TerrainType::CUBE, direct3D->GetDevice(), direct3D->GetDeviceContext(), &tree);
+	terrain->worldMatrix = XMMatrixIdentity() * XMMatrixScaling(5.0f, 5.0f, 5.0f);
+	//terrain->DebugPrint();
+
+	//delete plane;
+	//plane = new GeometryData(16, 16, 16, GeometryData::TerrainType::CUBE, direct3D->GetDevice(), direct3D->GetDeviceContext(), &tree);
+	//plane->worldMatrix = XMMatrixIdentity() * XMMatrixScaling(50.0f, 0.01f, 50.0f) * XMMatrixTranslation(0.0f, -5.0f, 0.0f);
+
+	//delete sphere;
+	//sphere = new GeometryData(16, 16, 16, GeometryData::TerrainType::CUBE, direct3D->GetDevice(), direct3D->GetDeviceContext(), &tree);
+	//sphere->worldMatrix = XMMatrixIdentity() * XMMatrixTranslation(3.0f, 3.0f, 3.0f);
+}
+
+void Game::TakeInput() {
+	m_Camera.DoMovement(&m_gameInputCommands);
+
+	//if (m_gameInputCommands.waveGenerate)
+	//{
+	//	RegenerateTerrain();
+	//	m_Terrain.GenerateWaveHeightMap();
+	//}
+
+	//if (m_gameInputCommands.randomGenerate)
+	//{
+	//	m_Terrain.GenerateRandomHeightMap();
+	//}
+
+	//if (m_gameInputCommands.addRanGenerate)
+	//{
+	//	m_Terrain.GenerateAdditiveOrMultiplyNoiseMap();
+	//}
+
+	//if (m_gameInputCommands.smoothen)
+	//{
+	//	m_Terrain.SmoothenHeightMap();
+	//}
+}
+
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
-	m_Camera.DoMovement(&m_gameInputCommands);
+	TakeInput();
 
-	if (m_gameInputCommands.waveGenerate)
-	{
-		m_Terrain.GenerateWaveHeightMap();
-	}
+	tree.UpdateKDTree();
 
-	if (m_gameInputCommands.randomGenerate)
-	{
-		m_Terrain.GenerateRandomHeightMap();
-	}
+	//m_Terrain.Update();		//terrain update.  doesnt do anything at the moment. 
 
-	if (m_gameInputCommands.addRanGenerate)
-	{
-		m_Terrain.GenerateAdditiveOrMultiplyNoiseMap();
-	}
-
-	if (m_gameInputCommands.smoothen)
-	{
-		m_Terrain.SmoothenHeightMap();
-	}
-
-	m_Terrain.Update();		//terrain update.  doesnt do anything at the moment. 
-
-	m_world = Matrix::Identity;
+	//m_world = Matrix::Identity;
 
 	/*create our UI*/
 	SetupGUI();
@@ -196,16 +293,52 @@ void Game::Update(DX::StepTimer const& timer)
 #pragma endregion
 
 #pragma region Frame Render
+
+bool Game::RenderShadowMap(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix)
+{
+	shadowMap->Prepare(direct3D->GetDeviceContext());
+
+	//Geometry Goes here, Shadow Map RenderPass
+	//Loop for multiple Geometry
+	if (terrain->isGeometryGenerated)
+	{
+		terrain->SetVertexBuffer(direct3D->GetDeviceContext());
+		shadowMap->Render(direct3D->GetDeviceContext(), terrain->GetVertexCount(), terrain->worldMatrix, lightViewMatrix, lightProjectionMatrix);
+	}
+
+	//if (plane->isGeometryGenerated)
+	//{
+	//	plane->SetVertexBuffer(direct3D->GetDeviceContext());
+	//	shadowMap->Render(direct3D->GetDeviceContext(), plane->GetVertexCount(), plane->worldMatrix, lightViewMatrix, lightProjectionMatrix);
+	//}
+
+	//if (sphere->isGeometryGenerated)
+	//{
+	//	sphere->SetVertexBuffer(direct3D->GetDeviceContext());
+	//	shadowMap->Render(direct3D->GetDeviceContext(), sphere->GetVertexCount(), sphere->worldMatrix, lightViewMatrix, lightProjectionMatrix);
+	//}
+
+	direct3D->SetBackBufferRenderTarget();
+	direct3D->ResetViewport();
+
+	return true;
+}
+
 // Draws the scene.
 void Game::Render()
-{	
-	DirectX::SimpleMath::Matrix viewMatrix, projectionMatrix, translateMatrix;
+{
+	static float totaltime = 0.0f;
+	timer->Frame();
+	static float rotation = 0.0f;
 
-	m_Camera.Render();
+	float deltaTime = timer->GetFrameTime();
+	totaltime += deltaTime;
 
-	//Get world, view and proj matrices
-	//direct3D->GetWorldMatrix(worldMatrix);
-	m_Camera.GetViewMatrix(viewMatrix);
+	if (totaltime > 1000)
+	{
+		//fps = 1000.0f / deltaTime;
+		totaltime = 0.0f;
+	}
 
     // Don't try to render anything before the first Update.
     if (m_timer.GetFrameCount() == 0)
@@ -213,12 +346,26 @@ void Game::Render()
         return;
     }
 
-    Clear();
+	XMMATRIX viewMatrix, projectionMatrix, translateMatrix;
+	XMMATRIX lightViewMatrix, lightProjectionMatrix;
 
-    m_deviceResources->PIXBeginEvent(L"Render");
-    auto context = m_deviceResources->GetD3DDeviceContext();
-	auto renderTargetView = m_deviceResources->GetRenderTargetView();
-	auto depthTargetView = m_deviceResources->GetDepthStencilView();
+	m_Camera.Render();
+
+	// Get world, view and proj matrices
+	m_Camera.GetViewMatrix(viewMatrix);
+	direct3D->GetProjectionMatrix(projectionMatrix);
+	direct3D->GetWorldMatrix(translateMatrix);
+
+	//Get Lighting
+	//direct3D->GetWorldMatrix(worldMatrix);
+	m_Light.GenerateViewMatrix();
+	m_Light.GetViewMatrix(lightViewMatrix);
+	m_Light.GetProjectionMatrix(lightProjectionMatrix);
+
+	//m_deviceResources->PIXBeginEvent(L"Render");
+    auto context = direct3D->GetDeviceContext();
+	//auto renderTargetView = m_deviceResources->GetRenderTargetView();
+	//auto depthTargetView = m_deviceResources->GetDepthStencilView();
 
     // Draw Text to the screen
     m_sprites->Begin();
@@ -226,53 +373,233 @@ void Game::Render()
     m_sprites->End();
 
 	//Set Rendering states. 
-	context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+	/*context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
 	context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-	context->RSSetState(m_states->CullClockwise());
+	context->RSSetState(m_states->CullClockwise());*/
 //	context->RSSetState(m_states->Wireframe());
 
 	//prepare transform for floor object. 
-	m_world = SimpleMath::Matrix::Identity; //set world back to identity
-	SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, -0.6f, 0.0f);
-	SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.1);		//scale the terrain down a little. 
-	m_world = m_world * newScale *newPosition3;
+	//m_world = SimpleMath::Matrix::Identity; //set world back to identity
+	//SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, -0.6f, 0.0f);
+	//SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.1);		//scale the terrain down a little. 
+	//m_world = m_world * newScale *newPosition3;
+
+	RenderShadowMap(lightViewMatrix, lightProjectionMatrix);
+	SetScreenBuffer(0.5f, 0.5f, 0.5f, 1.0f);
+
+	//Render Geometry	
+	if (terrain)
+	{
+		if (rotateGeometry)
+		{
+			terrain->worldMatrix *= XMMatrixRotationY(deltaTime * 0.0001f);
+		}
+		terrain->Render(direct3D->GetDeviceContext(), viewMatrix, projectionMatrix, m_Camera.GetPosition(), steps_initial, steps_refinement, depthfactor, m_Light, shadowMap->GetShaderResourceView());
+	}
 
 	//setup and draw cube
-	m_BasicShaderPair.EnableShader(context);
-	m_BasicShaderPair.SetShaderParameters(context, &m_world, &viewMatrix, &m_projection, &m_Light, m_texture1.Get(), m_texture2.Get());
-	m_Terrain.Render(context);
-	
+	//m_BasicShaderPair.EnableShader(context);
+	//m_BasicShaderPair.SetShaderParameters(context, &m_world, &(SimpleMath::Matrix)viewMatrix, &m_projection, &m_Light, m_texture1.Get(), m_texture2.Get());
+	//m_Terrain.Render(context);
+
+	// Draw KDTree
+	if (renderKDTree) {
+		basicEffect->SetWorld(XMMatrixIdentity());
+		basicEffect->SetView(viewMatrix);
+		basicEffect->SetProjection(projectionMatrix);
+		basicEffect->Apply(direct3D->GetDeviceContext());
+		direct3D->GetDeviceContext()->IASetInputLayout(inputLayout);
+
+		primitiveBatch->Begin();
+		tree.Draw(primitiveBatch, Colors::LightGreen);
+		primitiveBatch->End();
+	}
+
 	//render our GUI
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	
 
     // Show the new frame.
-    m_deviceResources->Present();
+	basicEffect->SetWorld(XMMatrixIdentity());
+	basicEffect->SetView(viewMatrix);
+	basicEffect->SetProjection(projectionMatrix);
+	basicEffect->Apply(direct3D->GetDeviceContext());
+	direct3D->GetDeviceContext()->IASetInputLayout(inputLayout);
+
+	//Render KD-Tree
+	//primitiveBatch->Begin();
+	//tree.Draw(primitiveBatch, Colors::LightGreen);
+	//primitiveBatch->End();
+
+	ID3D11Texture2D* backBuffer;
+	direct3D->swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(&backBuffer));
+	direct3D->GetDeviceContext()->ResolveSubresource(backBuffer, 0, screenBuffer, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+
+	//Output Buffer
+	direct3D->EndScene();
+
+    //m_deviceResources->Present();
 }
 
+bool Game::GenerateScreenBuffer()
+{
+	D3D11_TEXTURE2D_DESC textureDesc;
+	HRESULT result;
+	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+	D3D11_TEXTURE2D_DESC depthBufferDesc;
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+
+	if (screenBuffer)
+	{
+		screenBuffer->Release();
+		screenBuffer = nullptr;
+	}
+
+	if (screenTargetView)
+	{
+		screenTargetView->Release();
+		screenTargetView = nullptr;
+	}
+
+	if (depthBuffer)
+	{
+		depthBuffer->Release();
+		depthBuffer = nullptr;
+	}
+
+	if (depthTargetView)
+	{
+		depthTargetView->Release();
+		depthTargetView = nullptr;
+	}
+
+	ZeroMemory(&textureDesc, sizeof(textureDesc));
+
+	//Setup Render target texture desc
+	textureDesc.Width = currentScreenWidth;
+	textureDesc.Height = currentScreenHeight;
+	textureDesc.MipLevels = 1;
+	textureDesc.ArraySize = 1;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.MiscFlags = 0;
+
+	//Multisample
+	textureDesc.SampleDesc.Count = direct3D->GetCurrentSampleCount();
+	textureDesc.SampleDesc.Quality = direct3D->GetCurrentQualityLevel();
+
+	// Create the render target texture.
+	result = direct3D->GetDevice()->CreateTexture2D(&textureDesc, nullptr, &screenBuffer);
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	renderTargetViewDesc.Format = textureDesc.Format;
+	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+	renderTargetViewDesc.Texture2D.MipSlice = 0;
+
+	// Create the render target view.
+	result = direct3D->GetDevice()->CreateRenderTargetView(screenBuffer, &renderTargetViewDesc, &screenTargetView);
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	// Initialize the description of the depth buffer.
+	ZeroMemory(&depthBufferDesc, sizeof(depthBufferDesc));
+
+	// Set up the description of the depth buffer.
+	depthBufferDesc.Width = currentScreenWidth;
+	depthBufferDesc.Height = currentScreenHeight;
+	depthBufferDesc.MipLevels = 1;
+	depthBufferDesc.ArraySize = 1;
+	depthBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthBufferDesc.CPUAccessFlags = 0;
+	depthBufferDesc.MiscFlags = 0;
+
+	//Multisample
+	depthBufferDesc.SampleDesc.Count = direct3D->GetCurrentSampleCount();
+	depthBufferDesc.SampleDesc.Quality = direct3D->GetCurrentQualityLevel();
+
+	// Create the texture for the depth buffer using the filled out description.
+	result = direct3D->GetDevice()->CreateTexture2D(&depthBufferDesc, nullptr, &depthBuffer);
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	// Initailze the depth stencil view description.
+	ZeroMemory(&depthStencilViewDesc, sizeof(depthStencilViewDesc));
+
+	// Set up the depth stencil view description.
+	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+	depthStencilViewDesc.Texture2D.MipSlice = 0;
+
+	// Create the depth stencil view.
+	result = direct3D->GetDevice()->CreateDepthStencilView(depthBuffer, &depthStencilViewDesc, &depthTargetView);
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool Game::SetScreenBuffer(float red, float green, float blue, float alpha)
+{
+	//m_deviceResources->PIXBeginEvent(L"Clear");
+
+	XMMATRIX lightViewMatrix, lightProjectionMatrix;
+
+	direct3D->BeginScene(red, green, blue, alpha);
+
+	//Set texture as render target
+	renderTexture->SetRenderTarget(direct3D->GetDeviceContext());
+	direct3D->GetDeviceContext()->OMSetRenderTargets(1, &screenTargetView, depthTargetView);
+	direct3D->GetDeviceContext()->RSSetViewports(1, &direct3D->viewport);
+
+	//Clear rendertexture
+	float color[4];
+
+	color[0] = red;
+	color[1] = green;
+	color[2] = blue;
+	color[3] = alpha;
+
+	direct3D->GetDeviceContext()->ClearRenderTargetView(screenTargetView, color);
+
+	direct3D->GetDeviceContext()->ClearDepthStencilView(depthTargetView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	//m_deviceResources->PIXEndEvent();
+
+	return true;
+}
 
 // Helper method to clear the back buffers.
-void Game::Clear()
-{
-    m_deviceResources->PIXBeginEvent(L"Clear");
-
-    // Clear the views.
-    auto context = m_deviceResources->GetD3DDeviceContext();
-    auto renderTarget = m_deviceResources->GetRenderTargetView();
-    auto depthStencil = m_deviceResources->GetDepthStencilView();
-
-    context->ClearRenderTargetView(renderTarget, Colors::CornflowerBlue);
-    context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    context->OMSetRenderTargets(1, &renderTarget, depthStencil);
-
-    // Set the viewport.
-    auto viewport = m_deviceResources->GetScreenViewport();
-    context->RSSetViewports(1, &viewport);
-
-    m_deviceResources->PIXEndEvent();
-}
-
+//void Game::Clear()
+//{
+//
+//    // Clear the views.
+//    auto context = direct3D->GetDeviceContext();
+//    auto renderTarget = m_deviceResources->GetRenderTargetView();
+//    auto depthStencil = m_deviceResources->GetDepthStencilView();
+//
+//    context->ClearRenderTargetView(renderTarget, Colors::CornflowerBlue);
+//    context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+//    context->OMSetRenderTargets(1, &renderTarget, depthStencil);
+//
+//    // Set the viewport.
+//    auto viewport = m_deviceResources->GetScreenViewport();
+//    context->RSSetViewports(1, &viewport);
+//
+//}
 #pragma endregion
 
 #pragma region Message Handlers
@@ -303,14 +630,14 @@ void Game::OnResuming()
 
 void Game::OnWindowMoved()
 {
-    auto r = m_deviceResources->GetOutputSize();
-    m_deviceResources->WindowSizeChanged(r.right, r.bottom);
+    //auto r = m_deviceResources->GetOutputSize();
+    //m_deviceResources->WindowSizeChanged(r.right, r.bottom);
 }
 
 void Game::OnWindowSizeChanged(int width, int height)
 {
-    if (!m_deviceResources->WindowSizeChanged(width, height))
-        return;
+    //if (!m_deviceResources->WindowSizeChanged(width, height))
+        //return;
 
     CreateWindowSizeDependentResources();
 }
@@ -335,12 +662,12 @@ void Game::GetDefaultSize(int& width, int& height) const
 }
 #pragma endregion
 
-#pragma region Direct3D Resources
+#pragma region Direct3D Resources - Initialization
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
 {
-    auto context = m_deviceResources->GetD3DDeviceContext();
-    auto device = m_deviceResources->GetD3DDevice();
+    auto context = direct3D->GetDeviceContext();
+    auto device = direct3D->GetDevice();
 
     m_states = std::make_unique<CommonStates>(device);
     m_fxFactory = std::make_unique<EffectFactory>(device);
@@ -349,30 +676,30 @@ void Game::CreateDeviceDependentResources()
 	m_batch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(context);
 
 	//setup our terrain
-	m_Terrain.Initialize(device, 1000, 1000);
+	//m_Terrain.Initialize(device, 1000, 1000);
 
 	//setup our test model
-	m_BasicModel.InitializeSphere(device);
-	m_BasicModel2.InitializeModel(device,"drone.obj");
-	m_BasicModel3.InitializeBox(device, 10.0f, 0.1f, 10.0f);	//box includes dimensions
+	//m_BasicModel.InitializeSphere(device);
+	//m_BasicModel2.InitializeModel(device,"drone.obj");
+	//m_BasicModel3.InitializeBox(device, 10.0f, 0.1f, 10.0f);	//box includes dimensions
 
 	//load and set up our Vertex and Pixel Shaders
-	m_BasicShaderPair.InitStandard(device, L"light_vs.cso", L"light_ps.cso");
+	//m_BasicShaderPair.InitStandard(device, L"light_vs.cso", L"light_ps.cso");
 
-	//load Textures
-	CreateDDSTextureFromFile(device, L"seafloor.dds",		nullptr,	m_texture1.ReleaseAndGetAddressOf());
-	CreateDDSTextureFromFile(device, L"GrassTex.dds", nullptr,	m_texture2.ReleaseAndGetAddressOf());
+	////load Textures
+	//CreateDDSTextureFromFile(device, L"seafloor.dds",		nullptr,	m_texture1.ReleaseAndGetAddressOf());
+	//CreateDDSTextureFromFile(device, L"GrassTex.dds", nullptr,	m_texture2.ReleaseAndGetAddressOf());
 
-	//Initialise Render to texture
-	m_FirstRenderPass = new RenderTexture(device, 800, 600, 1, 2);	//for our rendering, We dont use the last two properties. but.  they cant be zero and they cant be the same. 
+	////Initialise Render to texture
+	//m_FirstRenderPass = new RenderTexture(device, 800, 600, 1, 2);	//for our rendering, We dont use the last two properties. but.  they cant be zero and they cant be the same. 
 
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-    auto size = m_deviceResources->GetOutputSize();
-    float aspectRatio = float(size.right) / float(size.bottom);
+    //auto size = m_deviceResources->GetOutputSize();
+    float aspectRatio = (3.f / 4.f);
     float fovAngleY = 70.0f * XM_PI / 180.0f;
 
     // This is a simple example of change that can be made when the app is in
@@ -399,44 +726,59 @@ void Game::SetupGUI()
 	ImGui::NewFrame();
 
 	ImGui::Begin("Sin Wave Parameters");
-	ImGui::SliderFloat("Wave Amplitude", m_Terrain.GetAmplitude(), 0.0f, 10.0f);
-	ImGui::SliderFloat("Wavelength", m_Terrain.GetWavelength(), 0.0f, 1.0f);
-	if (ImGui::Button("Generate Wave Height Map")) {
-		m_Terrain.GenerateWaveHeightMap();
-	}
+	//ImGui::SliderFloat("Wave Amplitude", m_Terrain.GetAmplitude(), 0.0f, 10.0f);
+	//ImGui::SliderFloat("Wavelength", m_Terrain.GetWavelength(), 0.0f, 1.0f);
+	//if (ImGui::Button("Generate Wave Height Map")) {
+	//	m_Terrain.GenerateWaveHeightMap();
+	//}
 	ImGui::End();
 
 	ImGui::Begin("Noise Map Parameters");
-	ImGui::SliderFloat("Noise X Offset", m_Terrain.GetNoiseX(), -0.5f, 0.5f);
-	ImGui::SliderFloat("Noise Y Offset", m_Terrain.GetNoiseY(), -0.5f, 0.5f);
-	ImGui::SliderFloat("Noise Scale", m_Terrain.GetNoiseScale(), 0.0001f, 0.1f);
-	ImGui::SliderFloat("Noise Amplitude", m_Terrain.GetNoiseAmplitude(), 0.0f, 50.f);
-	if (ImGui::Button("Generate Random Height Map")) {
-		m_Terrain.GenerateRandomHeightMap();
-	}
+	//ImGui::SliderFloat("Noise X Offset", m_Terrain.GetNoiseX(), -0.5f, 0.5f);
+	//ImGui::SliderFloat("Noise Y Offset", m_Terrain.GetNoiseY(), -0.5f, 0.5f);
+	//ImGui::SliderFloat("Noise Scale", m_Terrain.GetNoiseScale(), 0.0001f, 0.1f);
+	//ImGui::SliderFloat("Noise Amplitude", m_Terrain.GetNoiseAmplitude(), 0.0f, 50.f);
+	//if (ImGui::Button("Generate Random Height Map")) {
+	//	m_Terrain.GenerateRandomHeightMap();
+	//}
 
-	ImGui::Checkbox("Toggle Additive(T) vs Multiplicative(F)", m_Terrain.GetNoiseMulToggle());
-	if (ImGui::Button("Generate Add/Multiply Blend Height Map")) {
-		m_Terrain.GenerateAdditiveOrMultiplyNoiseMap();
-	}
-
+	//ImGui::Checkbox("Toggle Additive(T) vs Multiplicative(F)", m_Terrain.GetNoiseMulToggle());
+	//if (ImGui::Button("Generate Add/Multiply Blend Height Map")) {
+	//	m_Terrain.GenerateAdditiveOrMultiplyNoiseMap();
+	//}
 	ImGui::End();
 
 	ImGui::Begin("Layer Map Parameters");
-	ImGui::SliderInt("Layer Number", m_Terrain.GetLayerCount(), 0, 20);
-	ImGui::SliderFloat("Layer Height", m_Terrain.GetLayerHeight(), 0.1f, 10.0f);
-	ImGui::Checkbox("Add Layer Steps?", m_Terrain.GetLayerSteps());
-	ImGui::Checkbox("Add 3D Noise?", m_Terrain.GetLayerNoise());
-	if (ImGui::Button("Generate Layered Noise Height Map")) {
-		m_Terrain.GenerateLayeredNoiseMap();
-	}
+	//ImGui::SliderInt("Layer Number", m_Terrain.GetLayerCount(), 0, 20);
+	//ImGui::SliderFloat("Layer Height", m_Terrain.GetLayerHeight(), 0.1f, 10.0f);
+	//ImGui::Checkbox("Add Layer Steps?", m_Terrain.GetLayerSteps());
+	//ImGui::Checkbox("Add 3D Noise?", m_Terrain.GetLayerNoise());
+	//if (ImGui::Button("Generate Layered Noise Height Map")) {
+	//	m_Terrain.GenerateLayeredNoiseMap();
+	//}
 
 
-	if (ImGui::Button("Smoothen Terrain")) {
-		m_Terrain.SmoothenHeightMap();
-	}
+	//if (ImGui::Button("Smoothen Terrain")) {
+	//	m_Terrain.SmoothenHeightMap();
+	//}
 	ImGui::End();
 
+	ImGui::Begin("KD Tree Parameters");
+	ImGui::Checkbox("RenderKDTree?", &renderKDTree);
+	ImGui::Checkbox("Rotate Geometry?", &rotateGeometry);
+	ImGui::SliderInt("Initial Steps", &steps_initial, 0, 100);
+	ImGui::SliderInt("Refinement Steps", &steps_refinement, 0, 20);
+	ImGui::SliderInt("Terrain Size X", &terrainX, 10, 100);
+	ImGui::SliderInt("Terrain Size Y", &terrainY, 10, 100);
+	ImGui::SliderInt("Terrain Size Z", &terrainZ, 10, 100);
+	ImGui::SliderFloat("Depth Factor", &depthfactor, 0.001f, 10.0f);
+	if (ImGui::Button("Regenerate Terrain")) {
+		RegenerateTerrain();
+	}
+	if (ImGui::Button("GenerateScreenBuffer")) {
+		GenerateScreenBuffer();
+	}
+	ImGui::End();
 }
 
 

@@ -3,15 +3,21 @@
 //
 #pragma once
 
-#include "DeviceResources.h"
+
+#include <fstream>
+#include "PrimitiveBatch.h"
+//#include "DeviceResources.h"
 #include "StepTimer.h"
 #include "Shader.h"
-#include "modelclass.h"
+//#include "modelclass.h"
 #include "Light.h"
 #include "Input.h"
 #include "Camera.h"
 #include "RenderTexture.h"
 #include "Terrain.h"
+#include "GeometryData.h"
+#include "ShadowMap.h"
+#include "D3DClass.h"
 
 
 // A basic game implementation that creates a D3D11 device and
@@ -28,6 +34,8 @@ public:
 
     // Basic game loop
     void Tick();
+
+    void TakeInput();
 
     // IDeviceNotify
     virtual void OnDeviceLost() override;
@@ -56,15 +64,34 @@ private:
 		DirectX::XMMATRIX projection;
 	}; 
 
+    // Init
+    void SetupPrimitiveBatch();
+
     void Update(DX::StepTimer const& timer);
+    bool RenderShadowMap(const XMMATRIX& lightViewMatrix, const XMMATRIX& lightProjectionMatrix);
     void Render();
-    void Clear();
+    bool SetScreenBuffer(float red, float green, float blue, float alpha);
+    bool GenerateScreenBuffer();
+    //void Clear();
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
 	void SetupGUI();
+    void RegenerateTerrain();
+    //void CastRay(const Ray& ray);
+    //void CheckRaycast();
 
     // Device resources.
-    std::unique_ptr<DX::DeviceResources>    m_deviceResources;
+    //std::unique_ptr<DX::DeviceResources>    m_deviceResources;
+
+    D3DClass* direct3D;
+    // Texture renderTargets and buffers
+    int currentScreenWidth, currentScreenHeight;
+    ID3D11Texture2D* screenBuffer;
+    ID3D11RenderTargetView* screenTargetView;
+    ID3D11Texture2D* depthBuffer;
+    ID3D11DepthStencilView* depthTargetView;
+    RenderTextureClass* renderTexture;
+
 
     // Rendering loop timer.
     DX::StepTimer                           m_timer;
@@ -85,6 +112,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>                               m_batchInputLayout;
 	std::unique_ptr<DirectX::GeometricPrimitive>                            m_testmodel;
 
+    // Timer
+    TimerClass* timer;
+
 	//lights
 	Light																	m_Light;
 
@@ -96,16 +126,38 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_texture2;
 
 	//Shaders
-	Shader																	m_BasicShaderPair;
+	//Shader																	m_BasicShaderPair;
 
-	//Scene. 
-	Terrain																	m_Terrain;
-	ModelClass																m_BasicModel;
-	ModelClass																m_BasicModel2;
-	ModelClass																m_BasicModel3;
+    //Geometry
+    bool renderKDTree = false;
+    bool rotateGeometry = false;
+    int steps_initial = 10;
+    int steps_refinement = 5;
+    float depthfactor = 0.08f;
+
+    int terrainX = 3;
+    int terrainY = 3;
+    int terrainZ = 3;
+
+    // KDTree
+    PrimitiveBatch<VertexPositionColor>* primitiveBatch;
+    BasicEffect* basicEffect;
+    ID3D11InputLayout* inputLayout;
+    
+    //Scene.
+    //Terrain																	m_Terrain;
+    //ModelClass																m_BasicModel;
+    //ModelClass																m_BasicModel2;
+    //ModelClass																m_BasicModel3;
+
+    // Shadow map terrain
+    GeometryData* terrain = nullptr;
+    KdTree tree;
+    ShadowMap* shadowMap;
+
 
 	//RenderTextures
-	RenderTexture*															m_FirstRenderPass;
+	//RenderTexture*															m_FirstRenderPass;
 	RECT																	m_fullscreenRect;
 	RECT																	m_CameraViewRect;
 	
@@ -127,6 +179,6 @@ private:
     bool                                                                    m_retryDefault;
 #endif
 
-    DirectX::SimpleMath::Matrix                                             m_world;
-    DirectX::SimpleMath::Matrix                                             m_projection;
+    Matrix                                             m_world;
+    Matrix                                             m_projection;
 };

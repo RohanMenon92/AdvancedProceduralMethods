@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Shader.h"
 
+using namespace SimpleMath;
 
 Shader::Shader()
 {
@@ -97,12 +98,12 @@ bool Shader::InitStandard(ID3D11Device * device, WCHAR * vsFilename, WCHAR * psF
 	return true;
 }
 
-bool Shader::SetShaderParameters(ID3D11DeviceContext * context, DirectX::SimpleMath::Matrix * world, DirectX::SimpleMath::Matrix * view, DirectX::SimpleMath::Matrix * projection, Light *sceneLight1, ID3D11ShaderResourceView* texture1, ID3D11ShaderResourceView* texture2)
+bool Shader::SetShaderParameters(ID3D11DeviceContext * context, Matrix * world, Matrix * view, Matrix * projection, Light *sceneLight1, ID3D11ShaderResourceView* texture1, ID3D11ShaderResourceView* texture2)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	MatrixBufferType* dataPtr;
 	LightBufferType* lightPtr;
-	DirectX::SimpleMath::Matrix  tworld, tview, tproj;
+	Matrix  tworld, tview, tproj;
 
 	// Transpose the matrices to prepare them for the shader.
 	tworld = world->Transpose();
@@ -118,9 +119,9 @@ bool Shader::SetShaderParameters(ID3D11DeviceContext * context, DirectX::SimpleM
 
 	context->Map(m_lightBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 	lightPtr = (LightBufferType*)mappedResource.pData;
-	lightPtr->ambient = sceneLight1->getAmbientColour();
-	lightPtr->diffuse = sceneLight1->getDiffuseColour();	
-	lightPtr->position = sceneLight1->getPosition();  
+	lightPtr->ambient = sceneLight1->GetAmbientColour();
+	lightPtr->diffuse = sceneLight1->GetDiffuseColour();	
+	lightPtr->position = sceneLight1->GetPosition();  
 	lightPtr->padding = 0.0f;
 	context->Unmap(m_lightBuffer, 0);
 	context->PSSetConstantBuffers(0, 1, &m_lightBuffer);	//note the first variable is the mapped buffer ID.  Corresponding to what you set in the PS

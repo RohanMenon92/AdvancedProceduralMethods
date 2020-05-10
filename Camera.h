@@ -29,10 +29,10 @@ public:
 	bool Initialize(ID3D11Device*);
 	void Shutdown();
 
-	DirectX::SimpleMath::Vector3 GetPosition();
-	DirectX::SimpleMath::Vector3 GetForward();
-	DirectX::SimpleMath::Vector3 GetUp();
-	DirectX::SimpleMath::Vector3 GetRotation();
+	Vector3 GetPosition();
+	Vector3 GetForward();
+	Vector3 GetUp();
+	Vector3 GetRotation();
 
 	//float GetMoveSpeed();
 	//float GetRotationSpeed();
@@ -40,7 +40,7 @@ public:
 	void DoMovement(InputCommands*);
 
 	void Render();
-	void GetViewMatrix(DirectX::SimpleMath::Matrix&);
+	void GetViewMatrix(XMMATRIX&);
 
 private:
 

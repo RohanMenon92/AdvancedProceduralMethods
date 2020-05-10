@@ -69,6 +69,20 @@
       <Filter>Imgui</Filter>
     </ClInclude>
     <ClInclude Include="TimerClass.h" />
+    <ClInclude Include="GeometryData.h" />
+    <ClInclude Include="TextureClass.h" />
+    <ClInclude Include="VertexShader.h" />
+    <ClInclude Include="PixelShader.h" />
+    <ClInclude Include="GeometryOutputShader.h" />
+    <ClInclude Include="Noise.h" />
+    <ClInclude Include="KdTree.h" />
+    <ClInclude Include="ShaderUtility.h" />
+    <ClInclude Include="HullShader.h" />
+    <ClInclude Include="DomainShader.h" />
+    <ClInclude Include="TriangleLUT.h" />
+    <ClInclude Include="RenderTextureClass.h" />
+    <ClInclude Include="ShadowMap.h" />
+    <ClInclude Include="D3DClass.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -115,6 +129,18 @@
       <Filter>Imgui</Filter>
     </ClCompile>
     <ClCompile Include="TimerClass.cpp" />
+    <ClCompile Include="GeometryData.cpp" />
+    <ClCompile Include="TextureClass.cpp" />
+    <ClCompile Include="VertexShader.cpp" />
+    <ClCompile Include="PixelShader.cpp" />
+    <ClCompile Include="GeometryOutputShader.cpp" />
+    <ClCompile Include="Noise.cpp" />
+    <ClCompile Include="KdTree.cpp" />
+    <ClCompile Include="HullShader.cpp" />
+    <ClCompile Include="DomainShader.cpp" />
+    <ClCompile Include="RenderTextureClass.cpp" />
+    <ClCompile Include="ShadowMap.cpp" />
+    <ClCompile Include="D3DClass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -148,5 +174,13 @@
     <FxCompile Include="light_vs.hlsl">
       <Filter>Assets</Filter>
     </FxCompile>
+    <FxCompile Include="Triplanar_Displacement_PS.hlsl" />
+    <FxCompile Include="Tessellation_HS.hlsl" />
+    <FxCompile Include="Tessellation_DS.hlsl" />
+    <FxCompile Include="MarchingCube_VS.hlsl" />
+    <FxCompile Include="MarchingCube_GS.hlsl" />
+    <FxCompile Include="Geometry_VS.hlsl" />
+    <FxCompile Include="Depth_VS.hlsl" />
+    <FxCompile Include="Depth_PS.hlsl" />
   </ItemGroup>
 </Project>

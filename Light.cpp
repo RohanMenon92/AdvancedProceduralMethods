@@ -1,18 +1,20 @@
 // Light class
 // Holds data that represents a single light source
+#pragma once
 #include "pch.h"
 #include "light.h"
 
+using namespace DirectX;
 
 Light::Light()
 {
-	m_ambientColour	=	DirectX::SimpleMath::Vector4(0.0f,0.0f,0.0f, 0.0f);
-	m_diffuseColour	=	DirectX::SimpleMath::Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-	m_direction	=		DirectX::SimpleMath::Vector3(0.0f, 0.0f, 0.0f);
-	m_specularColour=	DirectX::SimpleMath::Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+	m_ambientColour	=	Vector4(0.0f,0.0f,0.0f, 0.0f);
+	m_diffuseColour	=	Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+	m_direction	=		Vector3(0.0f, 0.0f, 0.0f);
+	m_specularColour=	Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 	m_specularPower	=	0.0f;
-	m_position	=		DirectX::SimpleMath::Vector3(0.0f, 0.0f, 0.0f);
-	m_lookAt	=		DirectX::SimpleMath::Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+	m_position	=		Vector3(0.0f, 0.0f, 0.0f);
+	m_lookAt	=		Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 };
 
 
@@ -20,70 +22,104 @@ Light::~Light()
 {
 }
 
-void Light::setAmbientColour(float red, float green, float blue, float alpha)
+void Light::SetAmbientColour(float red, float green, float blue, float alpha)
 {
-	m_ambientColour = DirectX::SimpleMath::Vector4(red, green, blue, alpha);
+	m_ambientColour = Vector4(red, green, blue, alpha);
 }
 
-void Light::setDiffuseColour(float red, float green, float blue, float alpha)
+void Light::SetDiffuseColour(float red, float green, float blue, float alpha)
 {
-	m_diffuseColour = DirectX::SimpleMath::Vector4(red, green, blue, alpha);
+	m_diffuseColour = Vector4(red, green, blue, alpha);
 }
 
-void Light::setDirection(float x, float y, float z)
+void Light::SetDirection(float x, float y, float z)
 {
-	m_direction = DirectX::SimpleMath::Vector3(x, y, z);
+	m_direction = Vector3(x, y, z);
 }
 
-void Light::setSpecularColour(float red, float green, float blue, float alpha)
+void Light::SetSpecularColour(float red, float green, float blue, float alpha)
 {
-	m_specularColour = DirectX::SimpleMath::Vector4(red, green, blue, alpha);
+	m_specularColour = Vector4(red, green, blue, alpha);
 }
 
-void Light::setSpecularPower(float power)
+void Light::SetSpecularPower(float power)
 {
 	m_specularPower = power;
 }
 
-void Light::setPosition(float x, float y, float z)
+void Light::SetPosition(float x, float y, float z)
 {
-	m_position = XMVectorSet(x, y, z, 1.0f);
+	m_position = XMFLOAT3(x, y, z);
 }
 
-DirectX::SimpleMath::Vector4 Light::getAmbientColour()
+XMFLOAT4 Light::GetAmbientColour()
 {
 	return m_ambientColour;
 }
 
-DirectX::SimpleMath::Vector4 Light::getDiffuseColour()
+XMFLOAT4 Light::GetDiffuseColour()
 {
 	return m_diffuseColour;
 }
 
 
-DirectX::SimpleMath::Vector3 Light::getDirection()
+XMFLOAT4 Light::GetDirection()
 {
-	return m_direction;
+	Vector4 lightDir = m_lookAt - m_position;
+	lightDir.Normalize();
+	return XMFLOAT4(-lightDir);
 }
 
-DirectX::SimpleMath::Vector4 Light::getSpecularColour()
+XMFLOAT4 Light::GetSpecularColour()
 {
 	return m_specularColour;
 }
 
 
-float Light::getSpecularPower()
+float Light::GetSpecularPower()
 {
 	return m_specularPower;
 }
 
-DirectX::SimpleMath::Vector3 Light::getPosition()
+XMFLOAT3 Light::GetPosition()
 {
 	return m_position;
 }
 
-void Light::setLookAt(float x, float y, float z)
+void Light::SetLookAt(float x, float y, float z)
 {
-	m_lookAt = DirectX::SimpleMath::Vector4(x, y, z, 1.0f);
+	m_lookAt = Vector4(x, y, z, 1.0f);
 }
 
+void Light::GenerateViewMatrix()
+{
+	Vector3 up;
+
+	up.x = 0.0f;
+	up.y = 1.0f;
+	up.z = 0.0f;
+
+	
+	viewMatrix =  XMMatrixLookAtLH(XMLoadFloat3(&m_position), XMLoadFloat4(&m_lookAt), up);
+}
+
+void Light::GenerateProjectionsMatrix(float screenDepth, float screenNear)
+{
+	float fieldOfView, screenAspect;
+
+	//Setup fov and aspect for square light source
+	fieldOfView = XM_PIDIV2;
+	screenAspect = 1.0f;
+
+	projectionMatrix = XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, screenNear, screenDepth);
+}
+
+void Light::GetViewMatrix(XMMATRIX& otherview)
+{
+	otherview = viewMatrix;
+}
+
+void Light::GetProjectionMatrix(XMMATRIX& otherproj)
+{
+	otherproj = projectionMatrix;
+}

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Camera.h"
 
+using namespace DirectX;
+
 //camera for our app simple directX application. While it performs some basic functionality its incomplete. 
 //
 
@@ -72,32 +74,28 @@ void Camera::Shutdown()
 	}
 }
 
-DirectX::SimpleMath::Vector3 Camera::GetPosition()
+Vector3 Camera::GetPosition()
 {
 	return position;
 }
 
-DirectX::SimpleMath::Vector3 Camera::GetForward()
+Vector3 Camera::GetForward()
 {
 	return viewMatrix.Forward();
 }
 
-DirectX::SimpleMath::Vector3 Camera::GetUp()
+Vector3 Camera::GetUp()
 {
 	return viewMatrix.Up();
 }
 
-DirectX::SimpleMath::Vector3 Camera::GetRotation()
+Vector3 Camera::GetRotation()
 {
 	return rotation;
 }
 
 void Camera::DoMovement(InputCommands* input)
 {
-	unsigned int wkey = 0x57;
-	unsigned int skey = 0x53;
-	unsigned int akey = 0x41;
-	unsigned int dkey = 0x44;
 	Vector3 movementDirection;
 	timer->Frame();
 
@@ -167,7 +165,7 @@ void Camera::Render()
 	viewMatrix = viewMatrix.Transform(Matrix::CreateTranslation(-position), viewQuaternion);
 }
 
-void Camera::GetViewMatrix(DirectX::SimpleMath::Matrix& output)
+void Camera::GetViewMatrix(XMMATRIX& output)
 {
 	output = viewMatrix;
 }

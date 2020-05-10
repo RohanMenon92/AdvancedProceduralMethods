@@ -1,3 +1,5 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(459,5): warning MSB8028: The intermediate directory (Bin\Desktop_2015\x64\Debug\) contains files shared from another project (DirectXTKSimpleSample_2015.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  Camera.cpp
+  Game.cpp
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Game.cpp(559,11): warning C4101: 'lightViewMatrix': unreferenced local variable
+C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Game.cpp(559,28): warning C4101: 'lightProjectionMatrix': unreferenced local variable
   DirectXTKSimpleSample_2015.vcxproj -> C:\Users\aquar\OneDrive\Documents\Repos\AdvancedProceduralMethods\Bin\Desktop_2015\x64\Debug\AdvancedProcedural-1901120.exe
