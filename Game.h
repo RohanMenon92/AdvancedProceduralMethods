@@ -34,6 +34,7 @@ public:
     // Basic game loop
     void Tick();
 
+    
     void TakeInput();
 
     // IDeviceNotify
@@ -78,8 +79,9 @@ private:
     void RegenerateTerrain();
     void ChangeWireframing();
     void ToggleWireframe();
-    //void CastRay(const Ray& ray);
-    //void CheckRaycast();
+    bool CastShootRay(const Ray& ray, float maxRange);
+    void CastCanMoveRays();
+    bool CastCanMoveRay(const Ray& ray, float maxRange);
 
     // Device resources.
     //std::unique_ptr<DX::DeviceResources>    m_deviceResources;
@@ -147,6 +149,17 @@ private:
     float terrainMoveZ = 0;
 
     int terrainType = 0;
+
+    // Movement Debug
+    bool blockForward, blockBackward, blockLeft, blockRight;
+
+    // Shoot Debug
+    bool hasHit = false;
+    float lastHitDistance;
+    KdTree::MyBoundingBox* lastHitBox;
+    Vector3 lastHitPoint;
+
+
 
     // KDTree
     PrimitiveBatch<VertexPositionColor>* primitiveBatch;

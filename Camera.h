@@ -37,7 +37,7 @@ public:
 	//float GetMoveSpeed();
 	//float GetRotationSpeed();
 
-	void DoMovement(InputCommands*);
+	void DoMovement(InputCommands*, bool blockForward, bool blockLeft, bool blockRight, bool blockBack);
 
 	void Render();
 	void GetViewMatrix(XMMATRIX&);

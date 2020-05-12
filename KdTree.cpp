@@ -31,8 +31,7 @@ void KdTree::AddTriangle(Triangle* tri)
 {
 	treeTriangles->push_back(tri);
 }
-
-bool KdTree::hitCheckAll(const DirectX::SimpleMath::Ray* ray, float& t, float& tmin, RayHitStruct& rayhit)
+bool KdTree::hitCheckAll(const Ray* ray, float& t, float& tmin, RayHitStruct& rayhit)
 {
 	if (tree)
 	{
@@ -42,7 +41,7 @@ bool KdTree::hitCheckAll(const DirectX::SimpleMath::Ray* ray, float& t, float& t
 	return false;
 }
 
-bool KdTree::hit(const DirectX::SimpleMath::Ray* ray, float& t, float& tmin, RayHitStruct& rayhit)
+bool KdTree::hit(const Ray* ray, float& t, float& tmin, RayHitStruct& rayhit)
 {
 	if (tree)
 	{

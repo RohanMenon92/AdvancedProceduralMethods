@@ -204,8 +204,37 @@ void Game::Tick()
         m_retryDefault = true;
     }
 #endif
+}
 
-	
+bool Game::CastCanMoveRay(const Ray& ray, float maxRange)
+{
+	float hitfloat = 0.0f;
+
+	KdTree::RayHitStruct hit1;
+
+	return tree.hit(&ray, hitfloat, maxRange, hit1);
+}
+
+
+bool Game::CastShootRay(const Ray& ray, float maxRange)
+{
+	float hitfloat = 0.0f;
+
+	KdTree::RayHitStruct hit1;
+	if (tree.hit(&ray, hitfloat, maxRange, hit1))
+	{
+		hasHit = true;
+		lastHitDistance = hit1.hitDistance;
+		Vector3 lastHitPoint = hit1.hitPoint;
+	}
+	else
+	{
+		hasHit = false;
+		lastHitDistance = -1;
+		printf("Hit nothing.\n\r");
+	}
+
+	return hasHit;
 }
 
 void Game::ChangeWireframing()
@@ -249,14 +278,49 @@ void Game::RegenerateTerrain()
 	//sphere->worldMatrix = XMMatrixIdentity() * XMMatrixTranslation(3.0f, 3.0f, 3.0f);
 }
 
-void Game::TakeInput() {
-	m_Camera.DoMovement(&m_gameInputCommands);
+void Game::CastCanMoveRays() {
+	// Use a single ray and move it to different directions if input keys are pressed
+	Ray ray;
+	ray.position = m_Camera.GetPosition();
+	XMMATRIX newdir;
+	m_Camera.GetViewMatrix(newdir);
 
-	//if (m_gameInputCommands.waveGenerate)
-	//{
-	//	RegenerateTerrain();
-	//	m_Terrain.GenerateWaveHeightMap();
-	//}
+	if (m_gameInputCommands.forward) {
+		ray.direction = Matrix(newdir).Transpose().Backward();
+		blockForward = CastCanMoveRay(ray, 1);
+	}
+
+	if (m_gameInputCommands.back) {
+		ray.direction = Matrix(newdir).Transpose().Forward();
+		blockBackward = CastCanMoveRay(ray, 1);
+	}
+
+	if (m_gameInputCommands.left) {
+		ray.direction = Matrix(newdir).Transpose().Left();
+		blockLeft = CastCanMoveRay(ray, 1);
+	}
+
+	if (m_gameInputCommands.right) {
+		ray.direction = Matrix(newdir).Transpose().Right();
+		blockRight = CastCanMoveRay(ray, 1);
+	}
+}
+
+void Game::TakeInput() {
+	CastCanMoveRays();
+
+	m_Camera.DoMovement(&m_gameInputCommands, blockForward, blockLeft, blockRight, blockBackward);
+
+	if (m_gameInputCommands.shoot)
+	{
+		Ray ray;
+		ray.position = m_Camera.GetPosition();
+		XMMATRIX newdir;
+		m_Camera.GetViewMatrix(newdir);
+		ray.direction = Matrix(newdir).Transpose().Backward();
+
+		CastShootRay(ray, 10000);
+	}
 
 	//if (m_gameInputCommands.randomGenerate)
 	//{
@@ -340,12 +404,6 @@ bool Game::RenderShadowMap(const XMMATRIX& lightViewMatrix, const XMMATRIX& ligh
 		terrainMap->SetVertexBuffer(direct3D->GetDeviceContext());
 		shadowMap->Render(direct3D->GetDeviceContext(), terrainMap->GetVertexCount(), terrainMap->worldMatrix, lightViewMatrix, lightProjectionMatrix);
 	}
-
-	//if (sphere->isGeometryGenerated)
-	//{
-	//	sphere->SetVertexBuffer(direct3D->GetDeviceContext());
-	//	shadowMap->Render(direct3D->GetDeviceContext(), sphere->GetVertexCount(), sphere->worldMatrix, lightViewMatrix, lightProjectionMatrix);
-	//}
 
 	direct3D->SetBackBufferRenderTarget();
 	direct3D->ResetViewport();
@@ -759,59 +817,41 @@ void Game::SetupGUI()
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
-	ImGui::Begin("Sin Wave Parameters");
-	//ImGui::SliderFloat("Wave Amplitude", m_Terrain.GetAmplitude(), 0.0f, 10.0f);
-	//ImGui::SliderFloat("Wavelength", m_Terrain.GetWavelength(), 0.0f, 1.0f);
-	//if (ImGui::Button("Generate Wave Height Map")) {
-	//	m_Terrain.GenerateWaveHeightMap();
-	//}
-	ImGui::End();
-
-	ImGui::Begin("Noise Map Parameters");
-	//ImGui::SliderFloat("Noise X Offset", m_Terrain.GetNoiseX(), -0.5f, 0.5f);
-	//ImGui::SliderFloat("Noise Y Offset", m_Terrain.GetNoiseY(), -0.5f, 0.5f);
-	//ImGui::SliderFloat("Noise Scale", m_Terrain.GetNoiseScale(), 0.0001f, 0.1f);
-	//ImGui::SliderFloat("Noise Amplitude", m_Terrain.GetNoiseAmplitude(), 0.0f, 50.f);
-	//if (ImGui::Button("Generate Random Height Map")) {
-	//	m_Terrain.GenerateRandomHeightMap();
-	//}
-
-	//ImGui::Checkbox("Toggle Additive(T) vs Multiplicative(F)", m_Terrain.GetNoiseMulToggle());
-	//if (ImGui::Button("Generate Add/Multiply Blend Height Map")) {
-	//	m_Terrain.GenerateAdditiveOrMultiplyNoiseMap();
-	//}
-	ImGui::End();
-
-	ImGui::Begin("Layer Map Parameters");
-	//ImGui::SliderInt("Layer Number", m_Terrain.GetLayerCount(), 0, 20);
-	//ImGui::SliderFloat("Layer Height", m_Terrain.GetLayerHeight(), 0.1f, 10.0f);
-	//ImGui::Checkbox("Add Layer Steps?", m_Terrain.GetLayerSteps());
-	//ImGui::Checkbox("Add 3D Noise?", m_Terrain.GetLayerNoise());
-	//if (ImGui::Button("Generate Layered Noise Height Map")) {
-	//	m_Terrain.GenerateLayeredNoiseMap();
-	//}
-
-
-	//if (ImGui::Button("Smoothen Terrain")) {
-	//	m_Terrain.SmoothenHeightMap();
-	//}
-	ImGui::End();
-
-	ImGui::Begin("KD Tree Parameters");
-	ImGui::Checkbox("RenderKDTree?", &renderKDTree);
-	ImGui::Checkbox("Rotate Geometry?", &rotateGeometry);
+	ImGui::Begin("Terrain Object Control");
+	ImGui::SliderFloat("Depth Factor", &depthfactor, 0.001f, 0.01f);
 	ImGui::SliderInt("Terrain Size X", &terrainCountX, 10, 128);
 	ImGui::SliderInt("Terrain Size Y", &terrainCountY, 10, 128);
 	ImGui::SliderInt("Terrain Size Z", &terrainCountZ, 10, 128);
 	ImGui::SliderFloat("Terrain Move X", &terrainMoveX, -5.0, 5.0);
 	ImGui::SliderFloat("Terrain Move Y", &terrainMoveY, -5.0, 5.0);
 	ImGui::SliderFloat("Terrain Move Z", &terrainMoveZ, -5.0, 5.0);
-	ImGui::SliderFloat("Depth Factor", &depthfactor, 0.001f, 0.01f);
 	ImGui::SliderFloat("NoiseScale", &noiseScale, 10.f, 100.0f);
 	ImGui::SliderInt("TerrainType", &terrainType, 0, 7);
 	if (ImGui::Button("Regenerate Terrain")) {
 		RegenerateTerrain();
 	}
+	ImGui::Checkbox("Rotate Geometry?", &rotateGeometry);
+	ImGui::End();
+
+	ImGui::Begin("Hit Detection");
+	ImGui::Text("Press Space to Shoot.");
+	ImGui::Text(hasHit ? "Has Hit!!" : "No Hit");
+	if (hasHit) {
+		ImGui::Text("Last Hit Distance:  %f", &lastHitDistance);
+		ImGui::Text("Last Hit Point:  %f %f %f", &lastHitPoint.x, &lastHitPoint.y, &lastHitPoint.z);
+	}
+	ImGui::End();
+
+	ImGui::Begin("Movement Debug");
+	ImGui::Text(blockForward ? "Forward Blocked!!!" : "Press W to go Forward");
+	ImGui::Text(blockBackward ? "Back Blocked!!!" : "Press S to go Backward");
+	ImGui::Text(blockLeft ? "Left Blocked!!!" : "Press A to strafe Left");
+	ImGui::Text(blockRight ? "Right Blocked!!!" : "Press D to strafe Right");
+	ImGui::End();
+
+
+	ImGui::Begin("KD Tree/ Wireframe Parameters");
+	ImGui::Checkbox("RenderKDTree?", &renderKDTree);
 	if (ImGui::Button("ToggleWireframe")) {
 		ToggleWireframe();
 	}

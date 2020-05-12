@@ -41,7 +41,7 @@ bool Camera::Initialize(ID3D11Device* odevice)
 		return false;
 	}
 
-	SetPosition(0.0f, 0.0f, 0.0f);
+	SetPosition(5.0f, 5.0f, 5.0f);
 	SetRotation(0.0f, 0.0f, 0.0f);	//orientation is -90 becuase zero will be looking up at the sky straight up. 
 
 	return true;
@@ -94,7 +94,7 @@ Vector3 Camera::GetRotation()
 	return rotation;
 }
 
-void Camera::DoMovement(InputCommands* input)
+void Camera::DoMovement(InputCommands* input, bool blockForward, bool blockLeft, bool blockRight, bool blockBack)
 {
 	Vector3 movementDirection;
 	timer->Frame();
@@ -106,22 +106,22 @@ void Camera::DoMovement(InputCommands* input)
 	viewQuaternion.Inverse(viewQuaternion);
 
 	//Movement
-	if (input->forward)
+	if (input->forward && !blockForward)
 	{
 		movementDirection = Vector3::Transform(Vector3::Forward, viewQuaternion);
 		position -= movementDirection * cameraSpeed;
 	}
-	if (input->back)
+	if (input->back && !blockBack)
 	{
 		movementDirection = Vector3::Transform(Vector3::Forward, viewQuaternion);
 		position += cameraSpeed * movementDirection;
 	}
-	if (input->left)
+	if (input->left && !blockLeft)
 	{
 		movementDirection = Vector3::Transform(Vector3::Forward.Cross(Vector3::Up), viewQuaternion);
 		position -= cameraSpeed * movementDirection;
 	}
-	if (input->right)
+	if (input->right && !blockRight)
 	{
 		movementDirection = Vector3::Transform(Vector3::Forward.Cross(Vector3::Up), viewQuaternion);
 		position += cameraSpeed * movementDirection;

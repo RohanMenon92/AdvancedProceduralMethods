@@ -70,20 +70,20 @@ void Input::Update()
 	else		m_GameInput.rotDown = false;
 
 	//wave
-	if (kb.Space) m_GameInput.waveGenerate = true;
-	else		m_GameInput.waveGenerate = false;
+	if (kb.Space) m_GameInput.shoot = true;
+	else		m_GameInput.shoot = false;
 
-	//random
-	if (kb.LeftControl) m_GameInput.randomGenerate = true;
-	else		m_GameInput.randomGenerate = false;
+	////random
+	//if (kb.LeftControl) m_GameInput.randomGenerate = true;
+	//else		m_GameInput.randomGenerate = false;
 
-	//additiveRandom
-	if (kb.LeftAlt) m_GameInput.addRanGenerate = true;
-	else		m_GameInput.addRanGenerate = false;
+	////additiveRandom
+	//if (kb.LeftAlt) m_GameInput.addRanGenerate = true;
+	//else		m_GameInput.addRanGenerate = false;
 
-	//Plus Smoothing
-	if (kb.B) m_GameInput.smoothen = true;
-	else		m_GameInput.smoothen = false;
+	////Plus Smoothing
+	//if (kb.B) m_GameInput.smoothen = true;
+	//else		m_GameInput.smoothen = false;
 }
 
 bool Input::Quit()

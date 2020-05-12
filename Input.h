@@ -14,10 +14,10 @@ struct InputCommands
 	bool rotDown;
 	bool rotRight;
 	bool rotLeft;
-	bool waveGenerate;
-	bool randomGenerate;
-	bool addRanGenerate;
-	bool smoothen;
+	bool shoot;
+	//bool randomGenerate;
+	//bool addRanGenerate;
+	//bool smoothen;
 };
 
 
