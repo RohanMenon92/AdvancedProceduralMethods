@@ -112,9 +112,9 @@ void Game::Initialize(HWND window, int width, int height)
 	m_CameraViewRect.bottom = 240;
 
 	//setup light
-	m_Light.SetAmbientColour(0.3f, 0.3f, 0.3f, 1.0f);
+	m_Light.SetAmbientColour(0.5f, 0.5f, 0.5f, 1.0f);
 	m_Light.SetDiffuseColour(1.0f, 1.0f, 1.0f, 1.0f);
-	m_Light.SetPosition(2.0f, 1.0f, 1.0f);
+	m_Light.SetPosition(2.0f, 12.0f, 1.0f);
 	m_Light.SetDirection(-1.0f, -1.0f, 0.0f);
 	m_Light.SetLookAt(0.0f, 0.0f, 0.0f);
 	m_Light.GenerateProjectionsMatrix(GraphicsConfig::SCREEN_DEPTH, GraphicsConfig::SCREEN_NEAR);
@@ -202,18 +202,41 @@ void Game::Tick()
 	
 }
 
+void Game::ChangeWireframing()
+{
+	D3D11_FILL_MODE fillmode = wireframe ? D3D11_FILL_WIREFRAME : D3D11_FILL_SOLID;
+
+	ID3D11RasterizerState* rasterState;
+	D3D11_RASTERIZER_DESC rasterStateDesc;
+
+	direct3D->GetDeviceContext()->RSGetState(&rasterState);
+	rasterState->GetDesc(&rasterStateDesc);
+	rasterStateDesc.FillMode = fillmode;
+
+	direct3D->GetDevice()->CreateRasterizerState(&rasterStateDesc, &rasterState);
+	direct3D->GetDeviceContext()->RSSetState(rasterState);
+
+	rasterState->Release();
+	rasterState = nullptr;
+}
+void Game::ToggleWireframe() {
+	wireframe = !wireframe;
+	ChangeWireframing();
+}
+
 void Game::RegenerateTerrain()
 {
 	tree.PurgeTriangles();
-	delete terrain;
 
-	terrain = new GeometryData(terrainX, terrainY, terrainZ, GeometryData::TerrainType::CUBE, direct3D->GetDevice(), direct3D->GetDeviceContext(), &tree);
+	delete terrain;
+	GeometryData::TerrainType::Enum terrainSelect = static_cast<GeometryData::TerrainType::Enum>(terrainType);
+	terrain = new GeometryData(terrainCountX, terrainCountY, terrainCountZ, terrainSelect, direct3D->GetDevice(), direct3D->GetDeviceContext(), &tree, noiseScale);
 	terrain->worldMatrix = XMMatrixIdentity() * XMMatrixScaling(5.0f, 5.0f, 5.0f);
 	//terrain->DebugPrint();
 
-	//delete plane;
-	//plane = new GeometryData(16, 16, 16, GeometryData::TerrainType::CUBE, direct3D->GetDevice(), direct3D->GetDeviceContext(), &tree);
-	//plane->worldMatrix = XMMatrixIdentity() * XMMatrixScaling(50.0f, 0.01f, 50.0f) * XMMatrixTranslation(0.0f, -5.0f, 0.0f);
+	delete plane;
+	plane = new GeometryData(16, 16, 16, GeometryData::TerrainType::CUBE, direct3D->GetDevice(), direct3D->GetDeviceContext(), &tree, noiseScale);
+	plane->worldMatrix = XMMatrixIdentity() * XMMatrixScaling(50.0f, 0.01f, 50.0f) * XMMatrixTranslation(0.0f, -5.0f, 0.0f);
 
 	//delete sphere;
 	//sphere = new GeometryData(16, 16, 16, GeometryData::TerrainType::CUBE, direct3D->GetDevice(), direct3D->GetDeviceContext(), &tree);
@@ -306,11 +329,11 @@ bool Game::RenderShadowMap(const XMMATRIX& lightViewMatrix, const XMMATRIX& ligh
 		shadowMap->Render(direct3D->GetDeviceContext(), terrain->GetVertexCount(), terrain->worldMatrix, lightViewMatrix, lightProjectionMatrix);
 	}
 
-	//if (plane->isGeometryGenerated)
-	//{
-	//	plane->SetVertexBuffer(direct3D->GetDeviceContext());
-	//	shadowMap->Render(direct3D->GetDeviceContext(), plane->GetVertexCount(), plane->worldMatrix, lightViewMatrix, lightProjectionMatrix);
-	//}
+	if (plane->isGeometryGenerated)
+	{
+		plane->SetVertexBuffer(direct3D->GetDeviceContext());
+		shadowMap->Render(direct3D->GetDeviceContext(), plane->GetVertexCount(), plane->worldMatrix, lightViewMatrix, lightProjectionMatrix);
+	}
 
 	//if (sphere->isGeometryGenerated)
 	//{
@@ -349,42 +372,26 @@ void Game::Render()
 	XMMATRIX viewMatrix, projectionMatrix, translateMatrix;
 	XMMATRIX lightViewMatrix, lightProjectionMatrix;
 
+	//Generate view matrix based on camera
+	//m_Camera.DoMovement(input);
 	m_Camera.Render();
 
-	// Get world, view and proj matrices
+	//Get world, view and proj matrices
+	//direct3D->GetWorldMatrix(worldMatrix);
 	m_Camera.GetViewMatrix(viewMatrix);
 	direct3D->GetProjectionMatrix(projectionMatrix);
 	direct3D->GetWorldMatrix(translateMatrix);
 
-	//Get Lighting
-	//direct3D->GetWorldMatrix(worldMatrix);
+	//Lighting
 	m_Light.GenerateViewMatrix();
 	m_Light.GetViewMatrix(lightViewMatrix);
 	m_Light.GetProjectionMatrix(lightProjectionMatrix);
 
-	//m_deviceResources->PIXBeginEvent(L"Render");
-    auto context = direct3D->GetDeviceContext();
-	//auto renderTargetView = m_deviceResources->GetRenderTargetView();
-	//auto depthTargetView = m_deviceResources->GetDepthStencilView();
-
-    // Draw Text to the screen
-    m_sprites->Begin();
-		m_font->DrawString(m_sprites.get(), L"Procedural Methods", XMFLOAT2(10, 10), Colors::Yellow);
-    m_sprites->End();
-
-	//Set Rendering states. 
-	/*context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
-	context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-	context->RSSetState(m_states->CullClockwise());*/
-//	context->RSSetState(m_states->Wireframe());
-
-	//prepare transform for floor object. 
-	//m_world = SimpleMath::Matrix::Identity; //set world back to identity
-	//SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, -0.6f, 0.0f);
-	//SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.1);		//scale the terrain down a little. 
-	//m_world = m_world * newScale *newPosition3;
-
+	//Generate Shadow Map
 	RenderShadowMap(lightViewMatrix, lightProjectionMatrix);
+
+	//clear Buffer at beginning
+	//direct3D->BeginScene(0.2f, 0.5f, 0.5f, 0.0f);
 	SetScreenBuffer(0.5f, 0.5f, 0.5f, 1.0f);
 
 	//Render Geometry	
@@ -394,9 +401,22 @@ void Game::Render()
 		{
 			terrain->worldMatrix *= XMMatrixRotationY(deltaTime * 0.0001f);
 		}
+		terrain->worldMatrix *= XMMatrixTranslation(terrainMoveX * deltaTime * 0.0001f, terrainMoveY * deltaTime * 0.0001f, terrainMoveZ * deltaTime * 0.0001f);
+
 		terrain->Render(direct3D->GetDeviceContext(), viewMatrix, projectionMatrix, m_Camera.GetPosition(), steps_initial, steps_refinement, depthfactor, m_Light, shadowMap->GetShaderResourceView());
 	}
 
+	//Render Geometry	
+	if (plane)
+	{
+		if (rotateGeometry)
+		{
+			plane->worldMatrix *= XMMatrixRotationY(deltaTime * 0.0001f);
+		}
+
+
+		plane->Render(direct3D->GetDeviceContext(), viewMatrix, projectionMatrix, m_Camera.GetPosition(), steps_initial, steps_refinement, depthfactor, m_Light, shadowMap->GetShaderResourceView());
+	}
 	//setup and draw cube
 	//m_BasicShaderPair.EnableShader(context);
 	//m_BasicShaderPair.SetShaderParameters(context, &m_world, &(SimpleMath::Matrix)viewMatrix, &m_projection, &m_Light, m_texture1.Get(), m_texture2.Get());
@@ -657,8 +677,8 @@ void Game::NewAudioDevice()
 // Properties
 void Game::GetDefaultSize(int& width, int& height) const
 {
-    width = 800;
-    height = 600;
+    width = 1024;
+    height = 768;
 }
 #pragma endregion
 
@@ -766,18 +786,24 @@ void Game::SetupGUI()
 	ImGui::Begin("KD Tree Parameters");
 	ImGui::Checkbox("RenderKDTree?", &renderKDTree);
 	ImGui::Checkbox("Rotate Geometry?", &rotateGeometry);
-	ImGui::SliderInt("Initial Steps", &steps_initial, 0, 100);
-	ImGui::SliderInt("Refinement Steps", &steps_refinement, 0, 20);
-	ImGui::SliderInt("Terrain Size X", &terrainX, 10, 100);
-	ImGui::SliderInt("Terrain Size Y", &terrainY, 10, 100);
-	ImGui::SliderInt("Terrain Size Z", &terrainZ, 10, 100);
-	ImGui::SliderFloat("Depth Factor", &depthfactor, 0.001f, 10.0f);
+	ImGui::SliderInt("Terrain Size X", &terrainCountX, 10, 128);
+	ImGui::SliderInt("Terrain Size Y", &terrainCountY, 10, 128);
+	ImGui::SliderInt("Terrain Size Z", &terrainCountZ, 10, 128);
+	ImGui::SliderFloat("Terrain Move X", &terrainMoveX, -5.0, 5.0);
+	ImGui::SliderFloat("Terrain Move Y", &terrainMoveY, -5.0, 5.0);
+	ImGui::SliderFloat("Terrain Move Z", &terrainMoveZ, -5.0, 5.0);
+	ImGui::SliderFloat("Depth Factor", &depthfactor, 0.001f, 0.01f);
+	ImGui::SliderFloat("NoiseScale", &noiseScale, 10.f, 100.0f);
+	ImGui::SliderInt("TerrainType", &terrainType, 0, 6);
 	if (ImGui::Button("Regenerate Terrain")) {
 		RegenerateTerrain();
 	}
-	if (ImGui::Button("GenerateScreenBuffer")) {
-		GenerateScreenBuffer();
+	if (ImGui::Button("ToggleWireframe")) {
+		ToggleWireframe();
 	}
+
+	ImGui::SliderInt("Initial Steps", &steps_initial, 0, 100);
+	ImGui::SliderInt("Refinement Steps", &steps_refinement, 0, 20);
 	ImGui::End();
 }
 

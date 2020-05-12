@@ -33,7 +33,7 @@ public:
 		};
 	};
 
-	GeometryData(unsigned int width, unsigned int height, unsigned int depth, TerrainType::Enum type, ID3D11Device* device, ID3D11DeviceContext* deviceContext, KdTree* treeToUse);
+	GeometryData(unsigned int width, unsigned int height, unsigned int depth, TerrainType::Enum type, ID3D11Device* device, ID3D11DeviceContext* deviceContext, KdTree* treeToUse, float noiseScale);
 	~GeometryData();
 
 	void DebugPrint();
@@ -48,6 +48,8 @@ public:
 	XMMATRIX worldMatrix;
 
 	bool isGeometryGenerated = false;
+	float m_noiseScale;
+
 private:
 
 	struct MatrixBufferType

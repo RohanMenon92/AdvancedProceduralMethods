@@ -41,8 +41,8 @@ bool Camera::Initialize(ID3D11Device* odevice)
 		return false;
 	}
 
-	SetPosition(0.0f, 0.0f, 4.0f);
-	SetRotation(-90.0f, -90.0f, 0.0f);	//orientation is -90 becuase zero will be looking up at the sky straight up. 
+	SetPosition(0.0f, 0.0f, 0.0f);
+	SetRotation(0.0f, 0.0f, 0.0f);	//orientation is -90 becuase zero will be looking up at the sky straight up. 
 
 	return true;
 }
@@ -109,12 +109,12 @@ void Camera::DoMovement(InputCommands* input)
 	if (input->forward)
 	{
 		movementDirection = Vector3::Transform(Vector3::Forward, viewQuaternion);
-		position += cameraSpeed * movementDirection;
+		position -= movementDirection * cameraSpeed;
 	}
 	if (input->back)
 	{
 		movementDirection = Vector3::Transform(Vector3::Forward, viewQuaternion);
-		position -= movementDirection * cameraSpeed;
+		position += cameraSpeed * movementDirection;
 	}
 	if (input->left)
 	{
@@ -138,11 +138,11 @@ void Camera::DoMovement(InputCommands* input)
 	}
 	if (input->rotLeft)
 	{
-		rotation.y += rotationSpeed * 1;
+		rotation.y -= rotationSpeed * 1;
 	}
 	if (input->rotRight)
 	{
-		rotation.y -= rotationSpeed * 1;
+		rotation.y += rotationSpeed * 1;
 	}
 }
 

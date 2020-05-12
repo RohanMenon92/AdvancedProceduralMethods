@@ -6,15 +6,12 @@
 
 #include <fstream>
 #include "PrimitiveBatch.h"
-//#include "DeviceResources.h"
+#include "DeviceResources.h"
 #include "StepTimer.h"
-#include "Shader.h"
-//#include "modelclass.h"
 #include "Light.h"
 #include "Input.h"
 #include "Camera.h"
 #include "RenderTexture.h"
-#include "Terrain.h"
 #include "GeometryData.h"
 #include "ShadowMap.h"
 #include "D3DClass.h"
@@ -77,6 +74,8 @@ private:
     void CreateWindowSizeDependentResources();
 	void SetupGUI();
     void RegenerateTerrain();
+    void ChangeWireframing();
+    void ToggleWireframe();
     //void CastRay(const Ray& ray);
     //void CheckRaycast();
 
@@ -129,15 +128,23 @@ private:
 	//Shader																	m_BasicShaderPair;
 
     //Geometry
+    bool wireframe = false;
     bool renderKDTree = false;
     bool rotateGeometry = false;
     int steps_initial = 10;
     int steps_refinement = 5;
     float depthfactor = 0.08f;
+    float noiseScale = 10.f;
 
-    int terrainX = 3;
-    int terrainY = 3;
-    int terrainZ = 3;
+    int terrainCountX = 16;
+    int terrainCountY = 16;
+    int terrainCountZ = 16;
+
+    float terrainMoveX = 0;
+    float terrainMoveY = 0;
+    float terrainMoveZ = 0;
+
+    int terrainType;
 
     // KDTree
     PrimitiveBatch<VertexPositionColor>* primitiveBatch;
@@ -152,6 +159,7 @@ private:
 
     // Shadow map terrain
     GeometryData* terrain = nullptr;
+    GeometryData* plane = nullptr;
     KdTree tree;
     ShadowMap* shadowMap;
 

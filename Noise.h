@@ -7,8 +7,8 @@ class Noise
 {
 public:
 	Noise();
-	float Noise2D(float xin, float yin);
-	float Noise3D(float xin, float yin, float zin);
+	double Noise2D(double xin, double yin);
+	double Noise3D(double xin, double yin, double zin);
 
 private:
 	// For generating gradient values
@@ -32,7 +32,7 @@ private:
 		49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
 		138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180 };
 
-	int FastFloor(float x);
-	float Dot(int g[], float x, float y);
-	float Dot(int g[], float x, float y, float z);
+	int FastFloor(double x);
+	double Dot(int g[], double x, double y);
+	double Dot(int g[], double x, double y, double z);
 };

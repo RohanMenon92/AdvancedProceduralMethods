@@ -4,7 +4,7 @@
 
 using namespace DirectX;
 
-GeometryData::GeometryData(unsigned width, unsigned height, unsigned depth, TerrainType::Enum type, ID3D11Device* device, ID3D11DeviceContext* deviceContext, KdTree* treeToUse)
+GeometryData::GeometryData(unsigned int width, unsigned int height, unsigned int depth, TerrainType::Enum type, ID3D11Device* device, ID3D11DeviceContext* deviceContext, KdTree* treeToUse, float noiseScale)
 	: m_width(width), m_height(height), m_depth(depth), tree(treeToUse)
 {
 
@@ -16,6 +16,8 @@ GeometryData::GeometryData(unsigned width, unsigned height, unsigned depth, Terr
 
 	std::mt19937 generator(static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
 	m_noiseOffset = generator();
+
+	m_noiseScale = noiseScale;
 
 	switch (type)
 	{
@@ -148,7 +150,6 @@ void GeometryData::GenerateCubeData()
 					&& z >= 0 + depth_offset && z <= m_depth - depth_offset)
 				{
 					m_data[index] = 1.0f;
-
 				}
 				else
 				{
@@ -190,7 +191,7 @@ void GeometryData::GenerateSphereData()
 	DirectX::XMFLOAT3 center = DirectX::XMFLOAT3(m_width / 2.0f, m_height / 2.0f, m_depth / 2.0f);
 
 	size_t index = 0u;
-	float maxDistance = m_width / 2.0f;
+	float maxDistance = m_width / 2.5f;
 
 	for (UINT z = 0; z < m_depth; z++)
 	{
@@ -269,7 +270,7 @@ void GeometryData::GenerateHelixStructure()
 				float valueY = (float)y / (float)m_height * 3.0f;
 				float valueZ = (float)z / (float)m_depth * 3.0f;
 
-				result += (float)noise.Noise3D(valueX + m_noiseOffset, valueY + m_noiseOffset, valueZ + m_noiseOffset) * 5.0f;
+				result += (float)noise.Noise3D(valueX + m_noiseOffset, valueY + m_noiseOffset, valueZ + m_noiseOffset);
 
 				m_data[index] = result;
 				index++;
@@ -392,8 +393,8 @@ void GeometryData::LoadTextures(ID3D11Device* device)
 	TextureClass* rock3 = new TextureClass();
 	rock3->Initialize(device, L"./Assets/rock3.dds", L"./Assets/rock3_heightmap.dds");
 
-	TextureClass* brick = new TextureClass();
-	brick->Initialize(device, L"./Assets/brickwall.dds", L"./Assets/brickwall_heightmap.dds");
+	//TextureClass* rock3 = new TextureClass();
+	//rock3->Initialize(device, L"./Assets/Pebbles_020_basecolor.dds", L"./Assets/Pebbles_020_height.dds");
 
 	m_colorTextures[0] = rock1;
 	m_colorTextures[1] = rock2;
@@ -532,11 +533,20 @@ void GeometryData::GenerateNoiseData()
 		{
 			for (UINT x = 0; x < m_width; x++)
 			{
-				float valueX = (float)x / (float)m_width * 3.0f;
-				float valueY = (float)y / (float)m_height * 3.0f;
-				float valueZ = (float)z / (float)m_depth * 3.0f;
+				float valueX = (float)x / (float)m_width;
+				float valueY = (float)y / (float)m_height;
+				float valueZ = (float)z / (float)m_depth;
 
-				m_data[index] = (float)noise.Noise3D(valueX + m_noiseOffset, valueY + m_noiseOffset, valueZ + m_noiseOffset);
+				float noiseValue = (float)noise.Noise3D((valueX) * m_noiseScale, (valueY) * m_noiseScale, (valueZ ) * m_noiseScale);
+
+				//if (noiseValue > 0.f) {
+				//	noiseValue = 1.0f;
+				//}
+				//else {
+				//	noiseValue = -1.0f;
+				//}
+
+				m_data[index] = noiseValue;
 
 				index++;
 			}
@@ -550,7 +560,7 @@ void GeometryData::GenerateBumpySphere()
 	DirectX::XMFLOAT3 center = DirectX::XMFLOAT3(m_width / 2.0f, m_height / 2.0f, m_depth / 2.0f);
 
 	size_t index = 0u;
-	float maxDistance = m_width / 2.0f;
+	float maxDistance = m_width / 2.5f; // Keep it slightly smaller than cube step count
 
 	for (UINT z = 0; z < m_depth; z++)
 	{
@@ -558,13 +568,18 @@ void GeometryData::GenerateBumpySphere()
 		{
 			for (UINT x = 0; x < m_width; x++)
 			{
-				float result = 1.0f - (getDistance(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), center.x, center.y, center.z) / maxDistance);
+				float valueX = (float)x / (float)m_width;
+				float valueY = (float)y / (float)m_height;
+				float valueZ = (float)z / (float)m_depth;
 
-				float valueX = (float)x / (float)m_width * 3.0f;
-				float valueY = (float)y / (float)m_height * 3.0f;
-				float valueZ = (float)z / (float)m_depth * 3.0f;
+				float result = -1.0f;
+				if (getDistance(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), center.x, center.y, center.z) - maxDistance < 0) {
+					float noiseValue = (float)noise.Noise3D((valueX)*m_noiseScale, (valueY)*m_noiseScale, (valueZ)*m_noiseScale);
+					result = noiseValue > 0.0 ? -1.0 : 1.0f;
+				}
 
-				result += (float)noise.Noise3D(valueX + m_noiseOffset, valueY + m_noiseOffset, valueZ + m_noiseOffset) / 20.0f;
+
+				//result -= noiseVal;
 
 				m_data[index] = result;
 

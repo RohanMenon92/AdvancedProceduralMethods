@@ -28,9 +28,6 @@
     <ClInclude Include="Camera.h">
       <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="Shader.h">
-      <Filter>Rendering</Filter>
-    </ClInclude>
     <ClInclude Include="modelclass.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -39,9 +36,6 @@
     </ClInclude>
     <ClInclude Include="Input.h" />
     <ClInclude Include="RenderTexture.h">
-      <Filter>Rendering</Filter>
-    </ClInclude>
-    <ClInclude Include="Terrain.h">
       <Filter>Rendering</Filter>
     </ClInclude>
     <ClInclude Include="imconfig.h">
@@ -94,9 +88,6 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Shader.cpp">
-      <Filter>Rendering</Filter>
-    </ClCompile>
     <ClCompile Include="modelclass.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -105,9 +96,6 @@
     </ClCompile>
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="RenderTexture.cpp">
-      <Filter>Rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="Terrain.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="imgui.cpp">
@@ -162,18 +150,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="colour_ps.hlsl">
-      <Filter>Assets</Filter>
-    </FxCompile>
-    <FxCompile Include="colour_vs.hlsl">
-      <Filter>Assets</Filter>
-    </FxCompile>
-    <FxCompile Include="light_ps.hlsl">
-      <Filter>Assets</Filter>
-    </FxCompile>
-    <FxCompile Include="light_vs.hlsl">
-      <Filter>Assets</Filter>
-    </FxCompile>
     <FxCompile Include="Triplanar_Displacement_PS.hlsl" />
     <FxCompile Include="Tessellation_HS.hlsl" />
     <FxCompile Include="Tessellation_DS.hlsl" />
