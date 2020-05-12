@@ -39,6 +39,9 @@ GeometryData::GeometryData(unsigned int width, unsigned int height, unsigned int
 	case TerrainType::HELIX:
 		GenerateHelixStructure();
 		break;
+	case TerrainType::HEIGHT_MAP:
+		GenerateHeightMapData();
+		break;
 	}
 
 	m_texDesc = CreateTextureDesc();
@@ -129,6 +132,48 @@ GeometryData::~GeometryData()
 	}
 }
 
+void GeometryData::GenerateHeightMapData()
+{
+	unsigned int width_offset = m_width / 4;
+	unsigned int height_offset = m_height / 4;
+	unsigned int depth_offset = m_depth / 4;
+
+	size_t index = 0;
+
+	for (size_t z = 0u; z < m_depth; ++z)
+	{
+		for (size_t y = 0u; y < m_height; ++y)
+		{
+			for (size_t x = 0u; x < m_width; ++x)
+			{
+				float valueX = (float)x / (float)m_width;
+				float valueY = (float)y / (float)m_height;
+				float valueZ = (float)z / (float)m_depth;
+
+				m_data[index] = -1.0f;
+
+				float NoiseVal = (float)noise.Noise2D(valueX * m_noiseScale * valueY, valueZ * m_noiseScale * valueY);
+
+				if (
+					x >= 0 + width_offset && x <= m_width - width_offset
+					&& y >= 0 + height_offset && y <= m_height - height_offset
+					&& z >= 0 + depth_offset && z <= m_depth - depth_offset)
+				{
+					if (valueY >= 0.5f) {
+						m_data[index] = (NoiseVal);
+					}
+					else {
+						m_data[index] = 1.0f;
+					}
+				}
+
+				index++;
+
+			}
+		}
+	}
+}
+
 void GeometryData::GenerateCubeData()
 {
 	unsigned int width_offset = m_width / 4;
@@ -143,6 +188,11 @@ void GeometryData::GenerateCubeData()
 		{
 			for (size_t x = 0u; x < m_width; ++x)
 			{
+				float valueX = (float)x / (float)m_width;
+				float valueY = (float)y / (float)m_height;
+				float valueZ = (float)z / (float)m_depth;
+
+				m_data[index] = -1.0f;
 
 				if (
 					x >= 0 + width_offset && x <= m_width - width_offset
@@ -150,10 +200,6 @@ void GeometryData::GenerateCubeData()
 					&& z >= 0 + depth_offset && z <= m_depth - depth_offset)
 				{
 					m_data[index] = 1.0f;
-				}
-				else
-				{
-					m_data[index] = -1.0f;
 				}
 
 				index++;

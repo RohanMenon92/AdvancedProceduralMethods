@@ -29,6 +29,7 @@ public:
 			BUMPY_SPHERE,
 			PILLAR,
 			NOISE,
+			HEIGHT_MAP,
 			HELIX
 		};
 	};
@@ -110,6 +111,7 @@ private:
 	void GenerateNoiseData();
 	void GenerateBumpySphere();
 	void GenerateHelixStructure();
+	void GenerateHeightMapData();
 
 	bool SetBufferData(ID3D11DeviceContext* context, XMMATRIX worldMatrix, XMMATRIX viewMatrix, XMMATRIX projectionMatrix, XMFLOAT3 eyePos, int initialSteps, int refinementSteps, float depthfactor, Light& light);
 	int GetVertices(MarchingCubeVertexInputType** outVertices);

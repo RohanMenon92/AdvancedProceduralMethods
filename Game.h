@@ -146,7 +146,7 @@ private:
     float terrainMoveY = 0;
     float terrainMoveZ = 0;
 
-    int terrainType;
+    int terrainType = 0;
 
     // KDTree
     PrimitiveBatch<VertexPositionColor>* primitiveBatch;
@@ -155,7 +155,7 @@ private:
 
     // Marching Cubes Terrain
     GeometryData* terrain = nullptr;
-    GeometryData* plane = nullptr;
+    GeometryData* terrainMap = nullptr;
     KdTree tree;
     ShadowMap* shadowMap;
 
