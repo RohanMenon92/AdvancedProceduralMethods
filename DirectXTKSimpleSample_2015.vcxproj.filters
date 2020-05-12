@@ -74,6 +74,8 @@
     <ClInclude Include="RenderTextureClass.h" />
     <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="D3DClass.h" />
+    <ClInclude Include="SkydomeShader.h" />
+    <ClInclude Include="Skydome.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -123,6 +125,8 @@
     <ClCompile Include="RenderTextureClass.cpp" />
     <ClCompile Include="ShadowMap.cpp" />
     <ClCompile Include="D3DClass.cpp" />
+    <ClCompile Include="SkydomeShader.cpp" />
+    <ClCompile Include="Skydome.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -152,5 +156,7 @@
     <FxCompile Include="Geometry_VS.hlsl" />
     <FxCompile Include="Depth_VS.hlsl" />
     <FxCompile Include="Depth_PS.hlsl" />
+    <FxCompile Include="skydome_vs.hlsl" />
+    <FxCompile Include="skydome_ps.hlsl" />
   </ItemGroup>
 </Project>

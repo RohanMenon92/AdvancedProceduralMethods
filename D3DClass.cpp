@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "D3DClass.h"
 #include <iostream>
 
@@ -211,6 +212,16 @@ bool D3DClass::Initialize(int screenWidth, int screenHeight, bool vsync, HWND hw
 	//release pointer to back buffer
 	backBufferPtr->Release();
 	backBufferPtr = nullptr;
+
+	m_depthDisabledStencilState = 0;
+	m_alphaEnableBlendingState = 0;
+	m_alphaEnableBlendingState = 0;
+	m_alphaDisableBlendingState = 0;
+	// Skydome
+	m_rasterStateNoCulling = 0;
+	// Cloud
+	m_alphaBlendState2 = 0;
+	m_depthDisabledStencilState = 0;
 
 	//Initialze depth buffer desc
 	ZeroMemory(&depthBufferDescription, sizeof(depthBufferDescription));
@@ -533,4 +544,89 @@ int D3DClass::GetMaxSampleCount()
 int D3DClass::GetMaxQualityLevels()
 {
 	return maxQualityLevels.find(sampleCountModes[currentSampleIndex])->second;
+}
+
+void D3DClass::TurnZBufferOn()
+{
+	GetDeviceContext()->OMSetDepthStencilState(depthStencilState, 1);
+	return;
+}
+
+
+void D3DClass::TurnZBufferOff()
+{
+	GetDeviceContext()->OMSetDepthStencilState(m_depthDisabledStencilState, 1);
+	return;
+}
+
+
+void D3DClass::TurnOnAlphaBlending()
+{
+	float blendFactor[4];
+
+
+	// Setup the blend factor.
+	blendFactor[0] = 0.0f;
+	blendFactor[1] = 0.0f;
+	blendFactor[2] = 0.0f;
+	blendFactor[3] = 0.0f;
+
+	// Turn on the alpha blending.
+	GetDeviceContext()->OMSetBlendState(m_alphaEnableBlendingState, blendFactor, 0xffffffff);
+
+	return;
+}
+
+
+void D3DClass::TurnOffAlphaBlending()
+{
+	float blendFactor[4];
+
+
+	// Setup the blend factor.
+	blendFactor[0] = 0.0f;
+	blendFactor[1] = 0.0f;
+	blendFactor[2] = 0.0f;
+	blendFactor[3] = 0.0f;
+
+	// Turn off the alpha blending.
+	GetDeviceContext()->OMSetBlendState(m_alphaDisableBlendingState, blendFactor, 0xffffffff);
+
+	return;
+}
+
+void D3DClass::TurnOnCulling()
+{
+	// Set the culling rasterizer state.
+	GetDeviceContext()->RSSetState(rasterizerState);
+
+	return;
+}
+
+
+void D3DClass::TurnOffCulling()
+{
+	// Set the no back face culling rasterizer state.
+	GetDeviceContext()->RSSetState(m_rasterStateNoCulling);
+
+	return;
+}
+
+// new function for enabling the additive blend state.
+
+void D3DClass::EnableSecondBlendState()
+{
+	float blendFactor[4];
+
+
+	// Setup the blend factor.
+	blendFactor[0] = 0.0f;
+	blendFactor[1] = 0.0f;
+	blendFactor[2] = 0.0f;
+	blendFactor[3] = 0.0f;
+
+	// Turn on the alpha blending.
+	GetDeviceContext()->OMSetBlendState(m_alphaBlendState2, blendFactor, 0xffffffff);
+
+	return;
 }

@@ -14,8 +14,10 @@
 #include "RenderTexture.h"
 #include "GeometryData.h"
 #include "ShadowMap.h"
-#include "D3DClass.h"
+#include "SkydomeShader.h"
+#include "Skydome.h"
 
+#include "D3DClass.h"
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -150,19 +152,16 @@ private:
     PrimitiveBatch<VertexPositionColor>* primitiveBatch;
     BasicEffect* basicEffect;
     ID3D11InputLayout* inputLayout;
-    
-    //Scene.
-    //Terrain																	m_Terrain;
-    //ModelClass																m_BasicModel;
-    //ModelClass																m_BasicModel2;
-    //ModelClass																m_BasicModel3;
 
-    // Shadow map terrain
+    // Marching Cubes Terrain
     GeometryData* terrain = nullptr;
     GeometryData* plane = nullptr;
     KdTree tree;
     ShadowMap* shadowMap;
 
+    // Skydome
+    Skydome* skydome;
+    SkydomeShader* skydomeShader;
 
 	//RenderTextures
 	//RenderTexture*															m_FirstRenderPass;
@@ -188,5 +187,5 @@ private:
 #endif
 
     Matrix                                             m_world;
-    Matrix                                             m_projection;
+    Matrix                                             sky_projection;
 };

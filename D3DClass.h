@@ -32,8 +32,14 @@ public:
 	void GetOrthoMatrix(XMMATRIX&);
 
 	void GetVideoCardInfo(char*, int&);
-
+	void TurnZBufferOff();
+	void TurnOnAlphaBlending();
+	void TurnOffAlphaBlending();
+	void TurnOnCulling();
+	void TurnOffCulling();
+	void EnableSecondBlendState();
 	void SetBackBufferRenderTarget();
+
 	void ResetViewport();
 	void ChangeMultiSampleMode(int newsamplecount, int newqualitylevel);
 	void FindMultiSampleModes();
@@ -43,6 +49,8 @@ public:
 	void IncreaseQualityLevel();
 	int GetMaxSampleCount();
 	int GetMaxQualityLevels();
+
+	void TurnZBufferOn();
 
 	D3D11_VIEWPORT viewport;
 	IDXGISwapChain* swapChain;
@@ -60,6 +68,14 @@ private:
 	XMMATRIX projectionMatrix;
 	XMMATRIX worldMatrix;
 	XMMATRIX orthoMatrix;
+
+	// For skydome culling;
+	ID3D11DepthStencilState* m_depthDisabledStencilState;
+	ID3D11BlendState* m_alphaEnableBlendingState;
+	ID3D11BlendState* m_alphaDisableBlendingState;
+	ID3D11RasterizerState* m_rasterStateNoCulling;
+	//the new blend state pointer.
+	ID3D11BlendState* m_alphaBlendState2;
 
 	std::vector<int> sampleCountModes;
 	std::unordered_multimap<int, UINT> maxQualityLevels;

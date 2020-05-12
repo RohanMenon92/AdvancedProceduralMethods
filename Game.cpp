@@ -119,6 +119,12 @@ void Game::Initialize(HWND window, int width, int height)
 	m_Light.SetLookAt(0.0f, 0.0f, 0.0f);
 	m_Light.GenerateProjectionsMatrix(GraphicsConfig::SCREEN_DEPTH, GraphicsConfig::SCREEN_NEAR);
 	
+	// Skydome initialize
+	skydome = new Skydome;
+	skydome->Initialize(direct3D->GetDevice());
+	skydomeShader = new SkydomeShader;
+	skydomeShader->Initialize(direct3D->GetDevice(), window);
+
 	// Create timer for rotation
 	timer = new TimerClass();
 	timer->Initialize();
@@ -393,6 +399,15 @@ void Game::Render()
 	//clear Buffer at beginning
 	//direct3D->BeginScene(0.2f, 0.5f, 0.5f, 0.0f);
 	SetScreenBuffer(0.5f, 0.5f, 0.5f, 1.0f);
+
+	// Render Skybox
+	direct3D->TurnOffCulling();
+	direct3D->TurnZBufferOff();
+	m_world = SimpleMath::Matrix::Identity * Matrix::CreateScale(50.f) * SimpleMath::Matrix::CreateTranslation(m_Camera.GetPosition());
+	skydome->Render(direct3D->GetDeviceContext());
+	skydomeShader->Render(direct3D->GetDeviceContext(), skydome->GetIndexCount(), m_world, viewMatrix, sky_projection, skydome->GetApexColor(), skydome->GetCenterColor());
+	direct3D->TurnOnCulling();
+	direct3D->TurnZBufferOn();
 
 	//Render Geometry	
 	if (terrain)
@@ -713,6 +728,11 @@ void Game::CreateDeviceDependentResources()
 	////Initialise Render to texture
 	//m_FirstRenderPass = new RenderTexture(device, 800, 600, 1, 2);	//for our rendering, We dont use the last two properties. but.  they cant be zero and they cant be the same. 
 
+	float backBufferWidth = 800;
+	float backBufferHeight = 600;
+	sky_projection = Matrix::CreatePerspectiveFieldOfView(XMConvertToRadians(90.f),
+		backBufferWidth / backBufferHeight, 0.01f, 1000.f);
+
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -730,12 +750,12 @@ void Game::CreateWindowSizeDependentResources()
     }
 
     // This sample makes use of a right-handed coordinate system using row-major matrices.
-    m_projection = Matrix::CreatePerspectiveFieldOfView(
-        fovAngleY,
-        aspectRatio,
-        0.01f,
-        100.0f
-    );
+    //m_projection = Matrix::CreatePerspectiveFieldOfView(
+    //    fovAngleY,
+    //    aspectRatio,
+    //    0.01f,
+    //    100.0f
+    //);
 }
 
 void Game::SetupGUI()
