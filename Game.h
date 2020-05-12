@@ -6,7 +6,6 @@
 
 #include <fstream>
 #include "PrimitiveBatch.h"
-#include "DeviceResources.h"
 #include "StepTimer.h"
 #include "Light.h"
 #include "Input.h"
@@ -17,6 +16,7 @@
 #include "SkydomeShader.h"
 #include "Skydome.h"
 
+#include "DeviceResources.h"
 #include "D3DClass.h"
 
 // A basic game implementation that creates a D3D11 device and
@@ -140,17 +140,19 @@ private:
     float depthfactor = 0.08f;
     float noiseScale = 10.f;
 
-    int terrainCountX = 16;
-    int terrainCountY = 16;
-    int terrainCountZ = 16;
+    int terrainCountX = 64;
+    int terrainCountY = 64;
+    int terrainCountZ = 64;
 
     float terrainMoveX = 0;
     float terrainMoveY = 0;
     float terrainMoveZ = 0;
 
     int terrainType = 0;
+    string currentTerrainType;
 
     // Movement Debug
+    bool checkCollisions = true;
     bool blockForward, blockBackward, blockLeft, blockRight;
 
     // Shoot Debug

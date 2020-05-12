@@ -25,12 +25,12 @@ public:
 		enum Enum
 		{
 			CUBE,
+			NOISE,
 			SPHERE,
 			BUMPY_SPHERE,
-			PILLAR,
-			NOISE,
 			HEIGHT_MAP,
-			HELIX
+			HELIX,
+			PILLAR
 		};
 	};
 

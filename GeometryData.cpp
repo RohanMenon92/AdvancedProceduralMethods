@@ -279,9 +279,8 @@ void GeometryData::GeneratePillarData()
 }
 void GeometryData::GenerateHelixStructure()
 {
-
 	size_t index = 0u;
-	float maxDistance = m_width / 7.5f;
+	float maxDistance = m_width / 5.f;
 
 
 	for (UINT z = 0; z < m_depth; z++)
@@ -291,7 +290,7 @@ void GeometryData::GenerateHelixStructure()
 			DirectX::XMFLOAT3 center = DirectX::XMFLOAT3(m_width / 2.0f, static_cast<float>(y), m_depth / 2.0f);
 			DirectX::XMFLOAT3 pillar1 = DirectX::XMFLOAT3(center.x + 10.0f * (float)sin(y / 7.0f), center.y, center.z + 10.0f * (float)cos(y / 7.0f));
 			DirectX::XMFLOAT3 pillar2 = DirectX::XMFLOAT3(center.x + 10.0f * (float)sin(y / 7.0f + DirectX::XM_PI * 0.66f), center.y, center.z + 10.0f * (float)cos(y / 7.0f + DirectX::XM_PI * 0.66f));
-			DirectX::XMFLOAT3 pillar3 = DirectX::XMFLOAT3(center.x + 10.0f * (float)sin(y / 7.0f + DirectX::XM_PI * 0.66f * 2.0f) , center.y, center.z + 10.0f * (float)cos(y / 7.0f + DirectX::XM_PI * 0.66f * 2.0f));
+			DirectX::XMFLOAT3 pillar3 = DirectX::XMFLOAT3(center.x + 10.0f * (float)sin(y / 7.0f + DirectX::XM_PI * 0.66f * 2.0f), center.y, center.z + 10.0f * (float)cos(y / 7.0f + DirectX::XM_PI * 0.66f * 2.0f));
 
 			for (UINT x = 0; x < m_width; x++)
 			{
@@ -310,13 +309,6 @@ void GeometryData::GenerateHelixStructure()
 
 				//Outer Bounds
 				result -= pow((getDistance(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), center.x, center.y, center.z) / maxDistance), 3.0f);
-
-				//Noise
-				float valueX = (float)x / (float)m_width * 3.0f;
-				float valueY = (float)y / (float)m_height * 3.0f;
-				float valueZ = (float)z / (float)m_depth * 3.0f;
-
-				result += (float)noise.Noise3D(valueX + m_noiseOffset, valueY + m_noiseOffset, valueZ + m_noiseOffset);
 
 				m_data[index] = result;
 				index++;

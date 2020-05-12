@@ -42,7 +42,7 @@ bool Camera::Initialize(ID3D11Device* odevice)
 	}
 
 	SetPosition(5.0f, 5.0f, 5.0f);
-	SetRotation(0.0f, 0.0f, 0.0f);	//orientation is -90 becuase zero will be looking up at the sky straight up. 
+	SetRotation(45.0f, -90.0f, 0.0f);
 
 	return true;
 }

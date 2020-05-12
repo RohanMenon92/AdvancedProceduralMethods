@@ -261,6 +261,28 @@ void Game::ToggleWireframe() {
 
 void Game::RegenerateTerrain()
 {
+	if (terrainType == 0) {
+		currentTerrainType = "CUBE";
+	}
+	else if (terrainType == 1) {
+		currentTerrainType = "NOISY CUBE";
+	}
+	else if (terrainType == 2) {
+		currentTerrainType = "SPHERE";
+	}
+	else if (terrainType == 3) {
+		currentTerrainType = "NOISY SPHERE";
+	}
+	else if (terrainType == 4) {
+		currentTerrainType = "2D NOISE MAP";
+	}
+	else if (terrainType == 5) {
+		currentTerrainType = "HELIX";
+	}
+	else if (terrainType == 6) {
+		currentTerrainType = "PILLAR";
+	}
+
 	tree.PurgeTriangles();
 
 	delete terrain;
@@ -307,8 +329,6 @@ void Game::CastCanMoveRays() {
 }
 
 void Game::TakeInput() {
-	CastCanMoveRays();
-
 	m_Camera.DoMovement(&m_gameInputCommands, blockForward, blockLeft, blockRight, blockBackward);
 
 	if (m_gameInputCommands.shoot)
@@ -321,29 +341,18 @@ void Game::TakeInput() {
 
 		CastShootRay(ray, 10000);
 	}
-
-	//if (m_gameInputCommands.randomGenerate)
-	//{
-	//	m_Terrain.GenerateRandomHeightMap();
-	//}
-
-	//if (m_gameInputCommands.addRanGenerate)
-	//{
-	//	m_Terrain.GenerateAdditiveOrMultiplyNoiseMap();
-	//}
-
-	//if (m_gameInputCommands.smoothen)
-	//{
-	//	m_Terrain.SmoothenHeightMap();
-	//}
 }
 
 // Updates the world.
 void Game::Update(DX::StepTimer const& timer)
 {
+	if (checkCollisions) {
+		CastCanMoveRays();
+	}
+	tree.UpdateKDTree();
+
 	TakeInput();
 
-	tree.UpdateKDTree();
 
 	//m_Terrain.Update();		//terrain update.  doesnt do anything at the moment. 
 
@@ -669,24 +678,6 @@ bool Game::SetScreenBuffer(float red, float green, float blue, float alpha)
 	return true;
 }
 
-// Helper method to clear the back buffers.
-//void Game::Clear()
-//{
-//
-//    // Clear the views.
-//    auto context = direct3D->GetDeviceContext();
-//    auto renderTarget = m_deviceResources->GetRenderTargetView();
-//    auto depthStencil = m_deviceResources->GetDepthStencilView();
-//
-//    context->ClearRenderTargetView(renderTarget, Colors::CornflowerBlue);
-//    context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-//    context->OMSetRenderTargets(1, &renderTarget, depthStencil);
-//
-//    // Set the viewport.
-//    auto viewport = m_deviceResources->GetScreenViewport();
-//    context->RSSetViewports(1, &viewport);
-//
-//}
 #pragma endregion
 
 #pragma region Message Handlers
@@ -818,46 +809,54 @@ void Game::SetupGUI()
 	ImGui::NewFrame();
 
 	ImGui::Begin("Terrain Object Control");
-	ImGui::SliderFloat("Depth Factor", &depthfactor, 0.001f, 0.01f);
-	ImGui::SliderInt("Terrain Size X", &terrainCountX, 10, 128);
-	ImGui::SliderInt("Terrain Size Y", &terrainCountY, 10, 128);
-	ImGui::SliderInt("Terrain Size Z", &terrainCountZ, 10, 128);
-	ImGui::SliderFloat("Terrain Move X", &terrainMoveX, -5.0, 5.0);
-	ImGui::SliderFloat("Terrain Move Y", &terrainMoveY, -5.0, 5.0);
-	ImGui::SliderFloat("Terrain Move Z", &terrainMoveZ, -5.0, 5.0);
-	ImGui::SliderFloat("NoiseScale", &noiseScale, 10.f, 100.0f);
-	ImGui::SliderInt("TerrainType", &terrainType, 0, 7);
+	ImGui::Text("Current Terrain:");
+	ImGui::Text(currentTerrainType.c_str());
 	if (ImGui::Button("Regenerate Terrain")) {
 		RegenerateTerrain();
 	}
-	ImGui::Checkbox("Rotate Geometry?", &rotateGeometry);
+	ImGui::SliderInt("TerrainType", &terrainType, 0, 6);
+	ImGui::SliderFloat("NoiseScale", &noiseScale, 10.f, 100.0f);
+	ImGui::Text("Terrain Cube Resolution");
+	ImGui::SliderInt("Object Resolution X", &terrainCountX, 10, 128);
+	ImGui::SliderInt("Object Resolution Y", &terrainCountY, 10, 128);
+	ImGui::SliderInt("Object Resolution Z", &terrainCountZ, 10, 128);
 	ImGui::End();
 
 	ImGui::Begin("Hit Detection");
 	ImGui::Text("Press Space to Shoot.");
 	ImGui::Text(hasHit ? "Has Hit!!" : "No Hit");
 	if (hasHit) {
-		ImGui::Text("Last Hit Distance:  %f", &lastHitDistance);
-		ImGui::Text("Last Hit Point:  %f %f %f", &lastHitPoint.x, &lastHitPoint.y, &lastHitPoint.z);
+		//ImGui::Text("Last Hit Distance:  %f", &lastHitDistance);
+		//ImGui::Text("Last Hit Point:  %f %f %f", &lastHitPoint.x, &lastHitPoint.y, &lastHitPoint.z);
 	}
 	ImGui::End();
 
 	ImGui::Begin("Movement Debug");
-	ImGui::Text(blockForward ? "Forward Blocked!!!" : "Press W to go Forward");
-	ImGui::Text(blockBackward ? "Back Blocked!!!" : "Press S to go Backward");
-	ImGui::Text(blockLeft ? "Left Blocked!!!" : "Press A to strafe Left");
-	ImGui::Text(blockRight ? "Right Blocked!!!" : "Press D to strafe Right");
+	ImGui::Text("(Disable collisions improve performance)");
+	ImGui::Checkbox("Check Collisions?", &checkCollisions);
+	ImGui::Text(m_gameInputCommands.forward ? (blockForward ? "Forward Blocked!!!" : "Moving Forward") : "Press W to go Forward");
+	ImGui::Text(m_gameInputCommands.back ? (blockBackward ? "Back Blocked!!!" : "Moving Backward") : "Press S to go Backward");
+	ImGui::Text(m_gameInputCommands.left ? (blockLeft ? "Left Blocked!!!" : "Strafing Left") : "Press A to strafe Left");
+	ImGui::Text(m_gameInputCommands.right ? (blockRight ? "Right Blocked!!!" : "Strafing Right") : "Press D to strafe Right");
 	ImGui::End();
 
 
-	ImGui::Begin("KD Tree/ Wireframe Parameters");
+	ImGui::Begin("KD Tree/ Wireframe/ PSD Parameters");
 	ImGui::Checkbox("RenderKDTree?", &renderKDTree);
 	if (ImGui::Button("ToggleWireframe")) {
 		ToggleWireframe();
 	}
 
+	ImGui::Text("Pixel Shader Displacement");
+	ImGui::SliderFloat("Depth Factor", &depthfactor, 0.001f, 0.1f);
 	ImGui::SliderInt("Initial Steps", &steps_initial, 0, 100);
 	ImGui::SliderInt("Refinement Steps", &steps_refinement, 0, 20);
+
+	ImGui::Text("Move Central Object(Warning: Does not recompute KD Tree)");
+	ImGui::Checkbox("Rotate Geometry?", &rotateGeometry);
+	ImGui::SliderFloat("Move X", &terrainMoveX, -5.0, 5.0);
+	ImGui::SliderFloat("Move Y", &terrainMoveY, -5.0, 5.0);
+	ImGui::SliderFloat("Move Z", &terrainMoveZ, -5.0, 5.0);
 	ImGui::End();
 }
 
