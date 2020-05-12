@@ -527,6 +527,11 @@ void GeometryData::GenerateNoiseData()
 {
 	size_t index = 0u;
 
+	unsigned int width_offset = m_width / 4;
+	unsigned int height_offset = m_height / 4;
+	unsigned int depth_offset = m_depth / 4;
+
+
 	for (UINT z = 0; z < m_depth; z++)
 	{
 		for (UINT y = 0; y < m_height; y++)
@@ -537,14 +542,19 @@ void GeometryData::GenerateNoiseData()
 				float valueY = (float)y / (float)m_height;
 				float valueZ = (float)z / (float)m_depth;
 
-				float noiseValue = (float)noise.Noise3D((valueX) * m_noiseScale, (valueY) * m_noiseScale, (valueZ ) * m_noiseScale);
+				float noiseValue = -1.0f;
 
-				//if (noiseValue > 0.f) {
-				//	noiseValue = 1.0f;
-				//}
-				//else {
-				//	noiseValue = -1.0f;
-				//}
+				if (
+					x >= 0 + width_offset && x <= m_width - width_offset
+					&& y >= 0 + height_offset && y <= m_height - height_offset
+					&& z >= 0 + depth_offset && z <= m_depth - depth_offset)
+				{
+					noiseValue = (float)noise.Noise3D((valueX)*m_noiseScale, (valueY)*m_noiseScale, (valueZ)*m_noiseScale);
+					if (noiseValue < 0) {
+						noiseValue = -1.0f;
+					}
+				}
+
 
 				m_data[index] = noiseValue;
 

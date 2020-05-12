@@ -28,9 +28,6 @@
     <ClInclude Include="Camera.h">
       <Filter>Rendering</Filter>
     </ClInclude>
-    <ClInclude Include="modelclass.h">
-      <Filter>Rendering</Filter>
-    </ClInclude>
     <ClInclude Include="Light.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -86,9 +83,6 @@
       <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
-      <Filter>Rendering</Filter>
-    </ClCompile>
-    <ClCompile Include="modelclass.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
     <ClCompile Include="Light.cpp">

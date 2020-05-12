@@ -186,7 +186,6 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="KdTree.h" />
     <ClInclude Include="Light.h" />
-    <ClInclude Include="modelclass.h" />
     <ClInclude Include="Noise.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="PixelShader.h" />
@@ -220,7 +219,6 @@
     <ClCompile Include="KdTree.cpp" />
     <ClCompile Include="Light.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="modelclass.cpp" />
     <ClCompile Include="Noise.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
