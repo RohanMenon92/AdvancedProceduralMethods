@@ -293,8 +293,8 @@ void DeviceResources::CreateWindowSizeDependentResources()
             swapChainDesc.BufferCount = m_backBufferCount;
             swapChainDesc.SampleDesc.Count = 1;
             swapChainDesc.SampleDesc.Quality = 0;
-            swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
-            swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+            swapChainDesc.Scaling = DXGI_SCALING_ASPECT_RATIO_STRETCH;
+            swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
             swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
 
             DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
@@ -324,7 +324,7 @@ void DeviceResources::CreateWindowSizeDependentResources()
             swapChainDesc.BufferCount = m_backBufferCount;
             swapChainDesc.OutputWindow = m_window;
             swapChainDesc.Windowed = TRUE;
-            swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+            swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
             ThrowIfFailed(dxgiFactory->CreateSwapChain(
                 m_d3dDevice.Get(),

@@ -11,7 +11,7 @@ Light::Light()
 	m_ambientColour	=	Vector4(0.0f,0.0f,0.0f, 0.0f);
 	m_diffuseColour	=	Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 	m_direction	=		Vector3(0.0f, 0.0f, 0.0f);
-	m_specularColour=	Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+	m_specularColour =	Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 	m_specularPower	=	0.0f;
 	m_position	=		Vector3(0.0f, 0.0f, 0.0f);
 	m_lookAt	=		Vector4(0.0f, 0.0f, 0.0f, 0.0f);

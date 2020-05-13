@@ -15,10 +15,10 @@ namespace GraphicsConfig
 {
 	const bool FULL_SCREEN = false;
 	const bool VSYNC_ENABLED = true;
-	const float SCREEN_DEPTH = 5000.0f;
+	const float SCREEN_DEPTH = 1000.0f;
 	const float SCREEN_NEAR = 0.01f;
-	const int SHADOWMAP_WIDTH = 2048;
-	const int SHADOWMAP_HEIGHT = 2048;
+	const int SHADOWMAP_WIDTH = 1024;
+	const int SHADOWMAP_HEIGHT = 1024;
 }
 
 Game::Game() noexcept(false)
@@ -101,22 +101,12 @@ void Game::Initialize(HWND window, int width, int height)
 	ImGui_ImplWin32_Init(window);		//tie to our window
 	ImGui_ImplDX11_Init(direct3D->GetDevice(), direct3D->GetDeviceContext());	//tie to directx
 
-	m_fullscreenRect.left = 0;
-	m_fullscreenRect.top = 0;
-	m_fullscreenRect.right = 800;
-	m_fullscreenRect.bottom = 600;
-
-	m_CameraViewRect.left = 500;
-	m_CameraViewRect.top = 0;
-	m_CameraViewRect.right = 800;
-	m_CameraViewRect.bottom = 240;
-
 	//setup light
 	m_Light.SetAmbientColour(0.5f, 0.5f, 0.5f, 1.0f);
 	m_Light.SetDiffuseColour(1.0f, 1.0f, 1.0f, 1.0f);
 	m_Light.SetPosition(2.0f, 12.0f, 1.0f);
 	m_Light.SetDirection(-1.0f, -1.0f, 0.0f);
-	m_Light.SetLookAt(0.0f, 0.0f, 0.0f);
+	m_Light.SetLookAt(0.0f, 1.0f, 0.0f);
 	m_Light.GenerateProjectionsMatrix(GraphicsConfig::SCREEN_DEPTH, GraphicsConfig::SCREEN_NEAR);
 	
 	// Skydome initialize
@@ -129,10 +119,11 @@ void Game::Initialize(HWND window, int width, int height)
 	timer = new TimerClass();
 	timer->Initialize();
 
-	m_Camera.Initialize(direct3D->GetDevice());
 	RegenerateTerrain();
 
 	shadowMap = new ShadowMap(direct3D->GetDevice(), direct3D->GetCurrentSampleCount(), direct3D->GetCurrentQualityLevel());
+
+	m_Camera.Initialize(direct3D->GetDevice());
 
 	//Create RenderToTexture
 	renderTexture = new RenderTextureClass();
@@ -150,7 +141,7 @@ void Game::Initialize(HWND window, int width, int height)
 	// Create First Back Buffer
 	GenerateScreenBuffer();
 
-	// SetupPrimiive For cube selector
+	// SetupPrimiive For KDTree visualizer
 	SetupPrimitiveBatch();
 
 
@@ -349,6 +340,10 @@ void Game::Update(DX::StepTimer const& timer)
 	if (checkCollisions) {
 		CastCanMoveRays();
 	}
+	else {
+		blockForward = blockBackward = blockLeft = blockRight = false;
+	}
+
 	tree.UpdateKDTree();
 
 	TakeInput();
@@ -735,8 +730,8 @@ void Game::NewAudioDevice()
 // Properties
 void Game::GetDefaultSize(int& width, int& height) const
 {
-    width = 1024;
-    height = 768;
+    width = 1600;
+    height = 900;
 }
 #pragma endregion
 
@@ -749,9 +744,9 @@ void Game::CreateDeviceDependentResources()
 
     m_states = std::make_unique<CommonStates>(device);
     m_fxFactory = std::make_unique<EffectFactory>(device);
-    m_sprites = std::make_unique<SpriteBatch>(context);
-    m_font = std::make_unique<SpriteFont>(device, L"SegoeUI_18.spritefont");
-	m_batch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(context);
+    ////m_sprites = std::make_unique<SpriteBatch>(context);
+    //m_font = std::make_unique<SpriteFont>(device, L"SegoeUI_18.spritefont");
+	//m_batch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(context);
 
 	//setup our terrain
 	//m_Terrain.Initialize(device, 1000, 1000);
@@ -771,8 +766,9 @@ void Game::CreateDeviceDependentResources()
 	////Initialise Render to texture
 	//m_FirstRenderPass = new RenderTexture(device, 800, 600, 1, 2);	//for our rendering, We dont use the last two properties. but.  they cant be zero and they cant be the same. 
 
-	float backBufferWidth = 800;
-	float backBufferHeight = 600;
+
+	float backBufferWidth = currentScreenWidth;
+	float backBufferHeight = currentScreenHeight;
 	sky_projection = Matrix::CreatePerspectiveFieldOfView(XMConvertToRadians(90.f),
 		backBufferWidth / backBufferHeight, 0.01f, 1000.f);
 
@@ -803,6 +799,7 @@ void Game::CreateWindowSizeDependentResources()
 
 void Game::SetupGUI()
 {
+	ImGui::SetNextWindowSize(ImVec2(currentScreenWidth, currentScreenHeight));
 
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -852,22 +849,32 @@ void Game::SetupGUI()
 	ImGui::SliderInt("Initial Steps", &steps_initial, 0, 100);
 	ImGui::SliderInt("Refinement Steps", &steps_refinement, 0, 20);
 
-	ImGui::Text("Move Central Object(Warning: Does not recompute KD Tree)");
+	ImGui::Text("Move Central Object");
+	ImGui::Text("Warning: Does not recompute KD Tree");
 	ImGui::Checkbox("Rotate Geometry?", &rotateGeometry);
 	ImGui::SliderFloat("Move X", &terrainMoveX, -5.0, 5.0);
 	ImGui::SliderFloat("Move Y", &terrainMoveY, -5.0, 5.0);
 	ImGui::SliderFloat("Move Z", &terrainMoveZ, -5.0, 5.0);
+	ImGui::End();
+
+	ImGui::Begin("Menu");
+	if (ImGui::Button("Exit Game")) {
+		ExitGame();
+	}
 	ImGui::End();
 }
 
 
 void Game::OnDeviceLost()
 {
+	delete shadowMap;
+	delete terrainMap;
+	delete terrain;
     m_states.reset();
     m_fxFactory.reset();
-    m_sprites.reset();
-    m_font.reset();
-	m_batch.reset();
+    //m_sprites.reset();
+    //m_font.reset();
+	//m_batch.reset();
 	m_testmodel.reset();
     m_batchInputLayout.Reset();
 }

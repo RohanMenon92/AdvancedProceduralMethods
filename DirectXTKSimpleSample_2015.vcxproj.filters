@@ -76,6 +76,25 @@
     <ClInclude Include="D3DClass.h" />
     <ClInclude Include="SkydomeShader.h" />
     <ClInclude Include="Skydome.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Audio.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\CommonStates.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\DDSTextureLoader.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\DirectXHelpers.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Effects.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\GamePad.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\GeometricPrimitive.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\GraphicsMemory.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Keyboard.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Model.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Mouse.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\PostProcess.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\PrimitiveBatch.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\ScreenGrab.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\SimpleMath.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\SpriteBatch.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\SpriteFont.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\VertexTypes.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\WICTextureLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -141,6 +160,19 @@
       <Filter>Assets</Filter>
     </None>
     <None Include="packages.config" />
+    <None Include="packages\directxtk_desktop_2015.2019.5.31.1\include\SimpleMath.inl" />
+    <None Include="packages\directxtk_desktop_2015.2019.5.31.1\directxtk_desktop_2015.2019.5.31.1.nupkg" />
+    <None Include="packages\directxtk_desktop_2015.2019.5.31.1\build\native\directxtk_desktop_2015.targets" />
+    <None Include="ADPCMdroid.xwb" />
+    <None Include="imgui.ini" />
+    <None Include="Triplanar_Displacement_PS.cso" />
+    <None Include="MarchingCube_GS.cso" />
+    <None Include="MarchingCube_VS.cso" />
+    <None Include="Tessellation_DS.cso" />
+    <None Include="Tessellation_HS.cso" />
+    <None Include="Geometry_VS.cso" />
+    <None Include="Depth_VS.cso" />
+    <None Include="Depth_PS.cso" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="directx.ico">

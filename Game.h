@@ -107,11 +107,10 @@ private:
     std::unique_ptr<DirectX::CommonStates>                                  m_states;
     std::unique_ptr<DirectX::BasicEffect>                                   m_batchEffect;	
     std::unique_ptr<DirectX::EffectFactory>                                 m_fxFactory;
-    std::unique_ptr<DirectX::SpriteBatch>                                   m_sprites;
-    std::unique_ptr<DirectX::SpriteFont>                                    m_font;
+    //std::unique_ptr<DirectX::SpriteBatch>                                   m_sprites;
+    //std::unique_ptr<DirectX::SpriteFont>                                    m_font;
 
 	// Scene Objects
-	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>  m_batch;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout>                               m_batchInputLayout;
 	std::unique_ptr<DirectX::GeometricPrimitive>                            m_testmodel;
 
@@ -180,8 +179,8 @@ private:
 
 	//RenderTextures
 	//RenderTexture*															m_FirstRenderPass;
-	RECT																	m_fullscreenRect;
-	RECT																	m_CameraViewRect;
+	//RECT																	m_fullscreenRect;
+	//RECT																	m_CameraViewRect;
 	
 
 
