@@ -12,6 +12,8 @@ A KD Tree and raycasting is used for collision detection.
 
 Video Link: https://youtu.be/3PMkE95prCM
 
+Report: https://github.com/RohanMenon92/AdvancedProceduralMethods/blob/master/Advanced%20Procedural%20Report.pdf
+
 ## HLSL Shaders
 Implementation is done in DirectX (C++) using 4 different kinds of HLSL shaders:
 - Pixel Shaders (TriPlanar displacement, Shadow, Skydome)
