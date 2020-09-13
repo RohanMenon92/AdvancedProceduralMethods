@@ -23,7 +23,7 @@ Implementation is done in DirectX (C++) using 4 different kinds of HLSL shaders:
 
 ## Controls
 - W, A, S, D to move
-- Mouse to look
+- Arrow keys to look
 - Foldable IMGUI panels for controlling terrain, KD tree, tesselation rendering and collision detection
 
 ## Screenshots
